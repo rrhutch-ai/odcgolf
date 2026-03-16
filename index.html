@@ -103,6 +103,21 @@ header img{height:36px;width:auto;flex-shrink:0}
 .lb-score.pend{font-size:1.1rem;color:var(--border)}
 .lb-holes{font-size:.7rem;color:var(--muted)}
 .lb-empty{padding:24px;text-align:center;color:var(--muted);font-size:.85rem}
+.lb-section-head{padding:10px 16px;background:var(--surface);border-top:2px solid var(--border);border-bottom:1px solid var(--border)}
+.lb-section-head h3{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lb-player-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.lb-player-row.p-leader{background:#f0fdf4}
+.lb-player-rank{font-size:1rem;font-weight:800;color:var(--border);width:28px;flex-shrink:0}
+.lb-player-rank.g{color:var(--gold)}.lb-player-rank.s{color:#9ca3af}.lb-player-rank.b{color:#b45309}
+.lb-player-info{flex:1;min-width:0}
+.lb-player-name{font-size:.9rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-player-name.p-leader{color:var(--green)}
+.lb-player-team{font-size:.68rem;color:var(--muted)}
+.lb-player-score{text-align:right}
+.lb-player-num{font-size:1.4rem;font-weight:800;color:var(--text)}
+.lb-player-num.p-leader{color:var(--green)}
+.lb-player-num.pend{font-size:.95rem;color:var(--border)}
+.lb-player-holes{font-size:.68rem;color:var(--muted)}
 
 /* ── SETUP ── */
 .setup-card{background:var(--white);border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.18)}
@@ -519,16 +534,21 @@ function _refreshHole(ti, h) {
 // ── LEADERBOARD ────────────────────────────────────────────────────────────
 function renderLB() {
   const nt = state.config.numTeams || 0;
-  const rows = Array.from({length:nt},(_,i) => { const {total,holes}=teamTotal(i); return {name:tname(i),total,holes}; })
-    .sort((a,b) => {
-      if (a.holes===0&&b.holes===0) return 0;
-      if (a.holes===0) return 1; if (b.holes===0) return -1;
-      return a.total-b.total;
-    });
+  const np = state.config.numPlayers || 4;
 
-  const hasAny = rows.some(r => r.holes > 0);
+  // ── Team scores ──────────────────────────────────────────────────────────
+  const teamRows = Array.from({length:nt},(_,i) => {
+    const {total,holes}=teamTotal(i); return {name:tname(i),total,holes,idx:i};
+  }).sort((a,b) => {
+    if (a.holes===0&&b.holes===0) return 0;
+    if (a.holes===0) return 1; if (b.holes===0) return -1;
+    return a.total-b.total;
+  });
+
+  const hasAny = teamRows.some(r => r.holes > 0);
   const rnkClass = i => i===0?"g":i===1?"s":i===2?"b":"";
-  const rowHtml = rows.map((r,i) => `<div class="lb-row${i===0&&r.holes>0?" leader":""}">
+
+  const teamHtml = teamRows.map((r,i) => `<div class="lb-row${i===0&&r.holes>0?" leader":""}">
     <span class="lb-rank ${rnkClass(i)}">${i+1}</span>
     <span class="lb-name${i===0&&r.holes>0?" leader":""}">${esc(r.name)}</span>
     <div class="lb-detail">
@@ -537,12 +557,57 @@ function renderLB() {
     </div>
   </div>`).join("");
 
+  // ── Individual player scores ─────────────────────────────────────────────
+  // Each player's score for a hole is their individual entry (not the team best)
+  // Total = sum of their own scores across all holes they've entered
+  const players = [];
+  for (let t = 0; t < nt; t++) {
+    for (let p = 0; p < np; p++) {
+      let total = 0, holes = 0;
+      for (let h = 0; h < HOLES; h++) {
+        const v = state?.scores?.[t]?.[h]?.[p];
+        const n = +v;
+        if (v != null && !isNaN(n) && n > 0) { total += n; holes++; }
+      }
+      players.push({
+        name: pname(t, p),
+        team: tname(t),
+        total, holes
+      });
+    }
+  }
+
+  players.sort((a,b) => {
+    if (a.holes===0&&b.holes===0) return 0;
+    if (a.holes===0) return 1; if (b.holes===0) return -1;
+    return a.total-b.total;
+  });
+
+  const hasPlayerScores = players.some(p => p.holes > 0);
+
+  const playerHtml = players.map((p,i) => {
+    const isLeader = i===0 && p.holes>0;
+    return `<div class="lb-player-row${isLeader?" p-leader":""}">
+      <span class="lb-player-rank ${rnkClass(i)}">${i+1}</span>
+      <div class="lb-player-info">
+        <div class="lb-player-name${isLeader?" p-leader":""}">${esc(p.name)}</div>
+        <div class="lb-player-team">${esc(p.team)}</div>
+      </div>
+      <div class="lb-player-score">
+        ${p.holes>0 ? `<div class="lb-player-num${isLeader?" p-leader":""}">${p.total}</div>` : `<div class="lb-player-num pend">—</div>`}
+        <div class="lb-player-holes">${p.holes}/18</div>
+      </div>
+    </div>`;
+  }).join("");
+
   return `<div class="lb-card">
     <div class="lb-head">
       <h2>Leaderboard</h2>
       <span class="tname">${esc(state.config.tournamentName||"")}</span>
     </div>
-    ${hasAny ? rowHtml : `<div class="lb-empty">No scores yet — tap a team tab to start.</div>`}
+    ${hasAny ? teamHtml : `<div class="lb-empty">No scores yet — tap a team tab to start.</div>`}
+    <div class="lb-section-head"><h3>Individual scores</h3></div>
+    ${hasPlayerScores ? playerHtml : `<div class="lb-empty">No individual scores yet.</div>`}
   </div>`;
 }
 
