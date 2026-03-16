@@ -181,6 +181,23 @@ header{background:var(--dark-navy);border-bottom:3px solid var(--blue);padding:0
 .saving-pill{position:fixed;bottom:16px;right:16px;background:var(--blue);color:var(--white);font-size:.72rem;font-family:'Barlow',sans-serif;padding:5px 13px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200}
 .saving-pill.show{opacity:1}
 
+/* LOCK SCREEN */
+.lock-screen{background:var(--white);border-radius:8px;box-shadow:var(--shadow-lg);overflow:hidden;max-width:380px;margin:2rem auto}
+.lock-header{background:var(--navy);padding:1rem 1.25rem;border-bottom:2px solid var(--blue)}
+.lock-header h2{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--white)}
+.lock-header p{font-size:.78rem;color:rgba(255,255,255,.55);margin-top:3px}
+.lock-body{padding:1.5rem}
+.lock-body label{display:block;font-size:.75rem;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.lock-body input{width:100%;padding:10px 12px;border:1.5px solid var(--silver-dark);border-radius:4px;font-family:'Barlow',sans-serif;font-size:1rem;color:var(--text);margin-bottom:8px;letter-spacing:.15em;text-align:center}
+.lock-body input:focus{outline:none;border-color:var(--blue)}
+.lock-error{font-size:.75rem;color:#c0392b;min-height:16px;margin-bottom:8px;text-align:center}
+.lock-hint{font-size:.72rem;color:var(--text-muted);text-align:center;margin-top:8px}
+/* Team PIN field inside setup */
+.team-pin-row{display:flex;align-items:center;gap:8px;padding:6px 10px 8px;border-top:1px solid var(--silver-dark);background:var(--silver)}
+.team-pin-row label{font-size:.72rem;color:var(--text-muted);white-space:nowrap}
+.team-pin-inp{flex:1;padding:4px 7px;border:1px solid var(--silver-dark);border-radius:3px;font-size:.82rem;font-family:'Barlow',sans-serif;color:var(--text);letter-spacing:.1em;max-width:100px}
+.team-pin-inp:focus{outline:none;border-color:var(--blue)}
+
 .legend{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--silver);border-bottom:1px solid var(--silver-dark)}
 .legend-swatch{width:12px;height:12px;border-radius:2px;background:var(--green-best-bg);border:1px solid var(--green-best-border)}
 .legend-text{font-size:.7rem;color:var(--text-muted)}
@@ -237,6 +254,20 @@ header{background:var(--dark-navy);border-bottom:3px solid var(--blue);padding:0
   </div>
 </div>
 
+<!-- Team/Setup Lock Modal -->
+<div class="modal-overlay" id="lockModal">
+  <div class="modal">
+    <h3 id="lockModalTitle">Protected</h3>
+    <p id="lockModalDesc">Enter the PIN to continue.</p>
+    <input type="password" id="lockPinInput" placeholder="Enter PIN" maxlength="12" autocomplete="off">
+    <div class="modal-error" id="lockPinError"></div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeLockModal()">Cancel</button>
+      <button class="btn-modal-action" style="background:var(--blue)" onclick="submitLock()">Unlock</button>
+    </div>
+  </div>
+</div>
+
 <div class="saving-pill" id="savingPill">Saving...</div>
 
 <script type="module">
@@ -257,16 +288,22 @@ const firebaseConfig = {
   measurementId: "G-Z5RPRB2C5S"
 };
 
-const ADMIN_PIN = "9801"; // Change this before deploying
+const ADMIN_PIN = "7439"; // Change this before deploying — also protects the Setup tab
 // ──────────────────────────────────────────────────────────────────────────
 
 const NUM_HOLES = 18;
+
+// ── SESSION UNLOCK STATE (resets on page refresh — intentional) ────────────
+// "setup" requires the admin PIN.
+// Each numeric team index requires that team's PIN (or the admin PIN).
+const sessionUnlocked = new Set();
 
 // Local state
 let state = null; // null = not yet loaded from Firebase
 let activeTab = "setup"; // "setup" | "leaderboard" | 0..N (team index)
 let isRemoteUpdate = false;
 let savingTimer = null;
+let pendingLockTab = null; // which tab the lock screen is guarding
 
 const app  = initializeApp(firebaseConfig);
 const db   = getDatabase(app);
@@ -449,6 +486,7 @@ function renderSetupPanel() {
           oninput="window._setupPlayerName(${t},${p},this.value)">
       </div>`;
     }
+    const tpin = esc((state.teams && state.teams[t] && state.teams[t].pin) ? state.teams[t].pin : "");
     teamCards += `<div class="team-setup-card">
       <div class="team-setup-header">
         <span class="team-index-badge">${t+1}</span>
@@ -457,6 +495,12 @@ function renderSetupPanel() {
           oninput="window._setupTeamName(${t},this.value)">
       </div>
       <div class="player-list">${playerRows}</div>
+      <div class="team-pin-row">
+        <label>Team PIN (optional):</label>
+        <input class="team-pin-inp" type="text" inputmode="numeric" maxlength="8" value="${tpin}" placeholder="no PIN"
+          onchange="window._setupTeamPin(${t},this.value)"
+          oninput="window._setupTeamPin(${t},this.value)">
+      </div>
     </div>`;
   }
 
@@ -612,10 +656,77 @@ function renderLeaderboard() {
 
 // ── GLOBAL HANDLERS ────────────────────────────────────────────────────────
 window._setTab = (idx) => {
+  // Check if the target tab needs a PIN
+  if (idx === "setup" && !sessionUnlocked.has("setup")) {
+    pendingLockTab = idx;
+    showLockModal("setup", "Admin PIN required to access Setup.");
+    return;
+  }
+  if (typeof idx === "number" && !sessionUnlocked.has(idx)) {
+    const pin = getTeamPin(idx);
+    if (pin && pin.trim() !== "") {
+      pendingLockTab = idx;
+      showLockModal(idx, "Enter PIN for " + teamName(idx));
+      return;
+    }
+    // No PIN set for this team — allow through
+    sessionUnlocked.add(idx);
+  }
   activeTab = idx;
   renderTabs();
   renderPanels();
 };
+
+function getTeamPin(t) {
+  return (state && state.teams && state.teams[t] && state.teams[t].pin) ? state.teams[t].pin : "";
+}
+
+function showLockModal(target, message) {
+  document.getElementById("lockModalTitle").textContent =
+    target === "setup" ? "Setup Protected" : teamName(target) + " — Locked";
+  document.getElementById("lockModalDesc").textContent = message;
+  document.getElementById("lockPinInput").value = "";
+  document.getElementById("lockPinError").textContent = "";
+  document.getElementById("lockModal").classList.add("open");
+  setTimeout(() => document.getElementById("lockPinInput").focus(), 100);
+}
+
+window.submitLock = () => {
+  const entered = document.getElementById("lockPinInput").value;
+  const target  = pendingLockTab;
+
+  // Admin PIN always unlocks anything
+  if (entered === ADMIN_PIN) {
+    document.getElementById("lockModal").classList.remove("open");
+    sessionUnlocked.add(target);
+    activeTab = target;
+    renderTabs();
+    renderPanels();
+    return;
+  }
+
+  // For team tabs, also accept the team's own PIN
+  if (typeof target === "number") {
+    const teamPin = getTeamPin(target);
+    if (teamPin && teamPin.trim() !== "" && entered === teamPin.trim()) {
+      document.getElementById("lockModal").classList.remove("open");
+      sessionUnlocked.add(target);
+      activeTab = target;
+      renderTabs();
+      renderPanels();
+      return;
+    }
+  }
+
+  document.getElementById("lockPinError").textContent = "Incorrect PIN.";
+};
+
+window.closeLockModal = () => {
+  document.getElementById("lockModal").classList.remove("open");
+  pendingLockTab = null;
+};
+
+
 
 // Score cell change — uses per-cell transaction (safe for concurrent users)
 window._scoreChange = (ti, hi, pi, val) => {
@@ -641,6 +752,14 @@ window._setupPlayerName = (t, p, val) => {
   if (!state.teams[t]) state.teams[t] = { name: "Team "+(t+1), players: {} };
   if (!state.teams[t].players[p]) state.teams[t].players[p] = {};
   state.teams[t].players[p].name = val || "Player " + (p+1);
+  writeFull();
+};
+
+window._setupTeamPin = (t, val) => {
+  if (!state.teams[t]) state.teams[t] = { name: "Team "+(t+1), players: {} };
+  state.teams[t].pin = val.trim();
+  // If PIN is cleared, keep the tab unlocked for this session
+  if (!val.trim()) sessionUnlocked.add(t);
   writeFull();
 };
 
@@ -692,6 +811,8 @@ window.submitReset = () => {
     return;
   }
   state.scores = {};
+  // Admin reset also unlocks setup for this session
+  sessionUnlocked.add("setup");
   writeFull();
   closeAdminModal();
   renderPanels();
@@ -702,6 +823,12 @@ document.getElementById("adminModal").addEventListener("click", e => {
 });
 document.getElementById("pinInput").addEventListener("keydown", e => {
   if (e.key === "Enter") window.submitReset();
+});
+document.getElementById("lockModal").addEventListener("click", e => {
+  if (e.target === document.getElementById("lockModal")) window.closeLockModal();
+});
+document.getElementById("lockPinInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") window.submitLock();
 });
 </script>
 </body>
