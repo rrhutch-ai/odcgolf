@@ -278,7 +278,7 @@ import { getDatabase, ref, set, onValue, runTransaction } from "https://www.gsta
 // Replace these placeholders with your Firebase project config.
 // See README.md for step-by-step instructions.
 const firebaseConfig = {
-  apiKey: "AIzaSyAkfbyWSPfS-t1hznc8MEJy3PwjY13OO6A",
+apiKey: "AIzaSyAkfbyWSPfS-t1hznc8MEJy3PwjY13OO6A",
   authDomain: "odc-golf.firebaseapp.com",
   databaseURL: "https://odc-golf-default-rtdb.firebaseio.com",
   projectId: "odc-golf",
@@ -338,7 +338,13 @@ onValue(root, (snapshot) => {
         if (!state.teams[t].players[p]) state.teams[t].players[p] = { name: "Player " + (p+1) };
       }
     }
-    renderAll();
+    // If the user is currently on the setup tab, don't rebuild the panel —
+    // that would wipe whatever they are mid-typing. Just update tabs/leaderboard.
+    if (activeTab === "setup" && sessionUnlocked.has("setup")) {
+      renderTabs(); // keep team tab names in sync
+    } else {
+      renderAll();
+    }
     isRemoteUpdate = false;
   } else {
     // No data yet — show setup
@@ -435,9 +441,15 @@ function renderAll() {
   const banner = document.getElementById("setupBanner");
   if (isSetup) { banner.classList.remove("hidden"); } else { banner.classList.add("hidden"); }
 
-  // Default tab
-  if (activeTab === "setup" && !isSetup) activeTab = 0;
-  if (typeof activeTab === "number" && activeTab >= numTeams) activeTab = Math.max(0, numTeams-1);
+  // Only redirect away from setup on first load (when no tab has been chosen yet),
+  // not on every Firebase update. Once a user is on setup, leave them there.
+  if (activeTab === "setup" && isSetup) { /* stay on setup — no teams yet */ }
+  else if (activeTab === "setup" && !isSetup && numTeams > 0 && !sessionUnlocked.has("setup")) {
+    // First load with existing data and setup not unlocked — go to team 0
+    activeTab = 0;
+  }
+  // If teams were removed and the current tab index is out of range, clamp it
+  if (typeof activeTab === "number" && activeTab >= numTeams) activeTab = Math.max(0, numTeams - 1);
 
   renderTabs();
   renderPanels();
