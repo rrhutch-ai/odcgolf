@@ -23,7 +23,9 @@ header{background:var(--white);border-bottom:3px solid var(--blue);padding:0 16p
 header img{height:36px;width:auto;flex-shrink:0}
 .h-title{flex:1;min-width:0}
 .h-title h1{font-size:.95rem;font-weight:800;color:var(--navy);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
-.h-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.h-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.lb-hbtn{background:var(--gold);border:none;color:var(--white);font-size:.75rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;border-radius:7px;cursor:pointer;min-height:34px}
+.lb-hbtn:active{opacity:.85}
 .dot{width:7px;height:7px;border-radius:50%;background:#9ca3af;flex-shrink:0}
 .dot.on{background:#16a34a}.dot.err{background:#dc2626}
 /* Admin button now lives on the Info page, not in the header */
@@ -31,14 +33,12 @@ header img{height:36px;width:auto;flex-shrink:0}
 .admin-page-btn:active{background:var(--surface)}
 
 /* ── NAV TABS ── */
-.nav{display:flex;gap:6px;padding:12px 12px 0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
-.nav::-webkit-scrollbar{display:none}
-.ntab{flex-shrink:0;font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:8px 16px;border-radius:8px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);cursor:pointer;min-height:40px;transition:background .12s,color .12s}
-.ntab.active{background:var(--white);border-color:var(--blue);color:var(--navy)}
-.ntab.lb{border-color:rgba(251,191,36,.35);color:rgba(251,191,36,.65)}
-.ntab.lb.active{background:var(--gold);border-color:var(--gold-light);color:var(--white)}
-.ntab.setup{border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.65)}
-.ntab.setup.active{background:var(--blue);border-color:rgba(255,255,255,.5);color:var(--white)}
+.nav{display:none}
+/* back bar shown on non-home screens */
+.back-bar{display:flex;align-items:center;background:var(--navy);padding:6px 12px;border-bottom:1px solid rgba(255,255,255,.1)}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:var(--white);font-size:.8rem;font-weight:700;letter-spacing:.03em;padding:7px 14px;border-radius:8px;cursor:pointer;min-height:36px}
+.back-btn:active{background:rgba(255,255,255,.2)}
+.back-bar-title{flex:1;text-align:center;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.05em;text-transform:uppercase;padding-right:80px}
 
 /* ── MAIN ── */
 .main{padding:12px 12px 80px;max-width:600px;margin:0 auto}
@@ -127,14 +127,14 @@ header img{height:36px;width:auto;flex-shrink:0}
 .rule-text{font-size:.85rem;color:var(--text);line-height:1.5}
 .rule-text strong{color:var(--navy)}
 .teams-grid{display:flex;flex-direction:column;gap:8px}
-.welcome-team{border:1px solid var(--border);border-radius:8px;overflow:hidden}
-.welcome-team-head{background:var(--navy);padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer}
-.welcome-team-head h4{font-size:.9rem;font-weight:700;letter-spacing:.01em;color:var(--white);flex:1}
-.welcome-team-head .go-btn{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--blue);color:var(--white);border:none;border-radius:6px;padding:5px 10px;cursor:pointer;flex-shrink:0}
-.welcome-team-players{padding:8px 12px;display:flex;flex-wrap:wrap;gap:5px;background:var(--surface)}
-.welcome-player{font-size:.78rem;color:var(--white);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:3px 9px}
-.ntab.home{border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.7)}
-.ntab.home.active{background:var(--white);border-color:var(--blue);color:var(--navy)}
+.welcome-team{width:100%;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--navy);cursor:pointer;text-align:left;padding:0}
+.welcome-team:active{opacity:.85}
+.welcome-team-head{padding:10px 12px;display:flex;align-items:center;gap:8px}
+.welcome-team-head h4{font-size:.95rem;font-weight:700;letter-spacing:.01em;color:var(--white);flex:1}
+.welcome-team-head .go-btn{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--blue);color:var(--white);border:none;border-radius:6px;padding:5px 10px;flex-shrink:0}
+.welcome-team-players{padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:5px}
+.welcome-player{font-size:.75rem;color:rgba(255,255,255,.8);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:3px 9px}
+
 .lb-section-head{padding:10px 16px;background:var(--surface);border-top:2px solid var(--border);border-bottom:1px solid var(--border)}
 .lb-section-head h3{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .lb-player-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border)}
@@ -225,7 +225,7 @@ select.form-inp{cursor:pointer}
   </div>
 </header>
 
-<div class="nav" id="nav"></div>
+<div class="back-bar visible" id="back-bar"><button class="back-btn" id="home-btn" onclick="_tab('home')" style="visibility:hidden">← Home</button><span class="back-bar-title" id="back-bar-title"></span><button class="lb-hbtn" onclick="_tab('lb')">Leaderboard</button></div>
 <div class="main" id="main"></div>
 
 <!-- Admin modal -->
@@ -404,16 +404,17 @@ function render() {
 }
 
 function renderNav() {
-  const nt = state?.config?.numTeams || 0;
-  const el = document.getElementById("nav");
-  // Info and Setup are always visible
-  let h = `<button class="ntab home${tab==="home"?" active":""}" onclick="_tab('home')">Info</button>`;
-  h += `<button class="ntab setup${tab==="setup"?" active":""}" onclick="_tab('setup')">Setup</button>`;
-  for (let t = 0; t < nt; t++) {
-    h += `<button class="ntab${tab===t?" active":""}" onclick="_tab(${t})">${esc(tname(t))}</button>`;
+  const ttl = document.getElementById("back-bar-title");
+  const hbtn = document.getElementById("home-btn");
+  if (tab === "home") {
+    hbtn.style.visibility = "hidden";
+    ttl.textContent = "";
+  } else {
+    hbtn.style.visibility = "visible";
+    if (tab === "setup") ttl.textContent = "Setup";
+    else if (tab === "lb") ttl.textContent = "Leaderboard";
+    else ttl.textContent = tname(tab);
   }
-  if (nt > 0) h += `<button class="ntab lb${tab==="lb"?" active":""}" onclick="_tab('lb')">Leaderboard</button>`;
-  el.innerHTML = h;
 }
 
 function renderMain() {
@@ -581,13 +582,13 @@ function renderHome() {
     for (let p = 0; p < np; p++) {
       playerChips += `<span class="welcome-player">${esc(pname(t,p))}</span>`;
     }
-    teamsHtml += `<div class="welcome-team">
-      <div class="welcome-team-head" onclick="_tab(${t})">
+    teamsHtml += `<button class="welcome-team" onclick="_tab(${t})">
+      <div class="welcome-team-head">
         <h4>${esc(tname(t))}</h4>
-        <button class="go-btn" onclick="event.stopPropagation();_tab(${t})">Score →</button>
+        <span class="go-btn">Score →</span>
       </div>
       <div class="welcome-team-players">${playerChips}</div>
-    </div>`;
+    </button>`;
   }
 
   const setupPrompt = nt === 0 ? `<div class="welcome-section">
