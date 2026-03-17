@@ -238,7 +238,7 @@ select.form-inp{cursor:pointer}
   <div class="modal">
     <h3>Admin Reset</h3>
     <p>Enter your PIN to clear all scores. Names and config are preserved.</p>
-    <input type="password" id="adminPin" placeholder="PIN" maxlength="12" autocomplete="off">
+    <input type="text" inputmode="numeric" id="adminPin" placeholder="PIN" maxlength="12" autocomplete="one-time-code" style="letter-spacing:.12em">
     <div class="modal-err" id="adminErr"></div>
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" onclick="closeAdmin()">Cancel</button>
@@ -252,7 +252,7 @@ select.form-inp{cursor:pointer}
   <div class="modal">
     <h3 id="lockTitle">Protected</h3>
     <p id="lockDesc">Enter the PIN to continue.</p>
-    <input type="password" id="lockPin" placeholder="PIN" maxlength="12" autocomplete="off">
+    <input type="text" inputmode="numeric" id="lockPin" placeholder="PIN" maxlength="12" autocomplete="one-time-code" style="letter-spacing:.12em">
     <div class="modal-err" id="lockErr"></div>
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" onclick="closeLock()">Cancel</button>
@@ -765,7 +765,7 @@ function renderSetup() {
     for (let p = 0; p < np; p++) {
       players += `<div class="player-row">
         <span class="player-idx">${p+1}.</span>
-        <input class="player-inp" type="text" value="${esc(pname(t,p))}" placeholder="Player ${p+1}"
+        <input class="player-inp" type="text" autocomplete="off" value="${esc(pname(t,p))}" placeholder="Player ${p+1}"
           onchange="_spn(${t},${p},this.value)" oninput="_spn(${t},${p},this.value)">
       </div>`;
     }
@@ -773,14 +773,14 @@ function renderSetup() {
     teams += `<div class="tcard">
       <div class="tcard-head">
         <span class="tcard-idx">${t+1}</span>
-        <input class="tcard-name-inp" type="text" value="${esc(tname(t))}" placeholder="Team ${t+1}"
+        <input class="tcard-name-inp" type="text" autocomplete="off" value="${esc(tname(t))}" placeholder="Team ${t+1}"
           onchange="_stn(${t},this.value)" oninput="_stn(${t},this.value)">
       </div>
       <div class="tcard-body">
         ${players}
         <div class="pin-row">
           <label>Team PIN:</label>
-          <input class="pin-inp" id="pin-inp-${t}" type="text" inputmode="numeric" maxlength="8" value="${pin}" placeholder="optional"
+          <input class="pin-inp" id="pin-inp-${t}" type="text" autocomplete="one-time-code" inputmode="numeric" maxlength="8" value="${pin}" placeholder="optional"
             onchange="_stp(${t},this.value)" oninput="_stp(${t},this.value)">
           <button class="gen-pin-btn" onclick="_genPin(${t})">🎲 Generate</button>
         </div>
@@ -796,7 +796,7 @@ function renderSetup() {
       <div class="form-row">
         <div class="form-group">
           <label>Tournament name</label>
-          <input class="form-inp" type="text" value="${esc(tname_val)}" placeholder="e.g. Retreat 2026"
+          <input class="form-inp" type="text" autocomplete="off" value="${esc(tname_val)}" placeholder="e.g. Retreat 2026"
             onchange="_stname(this.value)" oninput="_stname(this.value)">
         </div>
         <div class="form-group">
@@ -864,7 +864,7 @@ window._stname = (v)  => { state.config.tournamentName=v; writeFull(); };
 window._snp  = (n)    => { state.config.numPlayers=n; writeFull(); renderMain(); };
 window._addTeam = ()  => { const t=state.config.numTeams; state.config.numTeams++; if(!state.teams[t]) state.teams[t]={name:"Team "+(t+1),players:{}}; writeFull(); renderNav(); renderMain(); };
 window._removeTeam = ()=> { if(state.config.numTeams<=1) return; state.config.numTeams--; writeFull(); if(typeof tab==="number"&&tab>=state.config.numTeams) tab=state.config.numTeams-1; renderNav(); renderMain(); };
-window._saveSetup = () => { writeFull(); if(state.config.numTeams>0){tab=0;openHole=null;unlocked.add("setup");renderNav();renderMain();} };
+window._saveSetup = () => { writeFull(); tab="home"; openHole=null; unlocked.add("setup"); renderNav(); renderMain(); };
 
 // ── ADMIN MODAL ─────────────────────────────────────────────────────────────
 window.openAdmin = () => { document.getElementById("adminPin").value=""; document.getElementById("adminErr").textContent=""; document.getElementById("adminModal").classList.add("open"); setTimeout(()=>document.getElementById("adminPin").focus(),100); };
