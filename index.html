@@ -19,17 +19,16 @@ html{font-size:16px;-webkit-text-size-adjust:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--navy);min-height:100vh;min-height:-webkit-fill-available;color:var(--text);overscroll-behavior:none}
 
 /* ── HEADER ── */
-header{background:var(--white);border-bottom:3px solid var(--blue);padding:0 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;height:52px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-header img{height:32px;width:auto;flex-shrink:0}
+header{background:var(--white);border-bottom:3px solid var(--blue);padding:0 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;height:56px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+header img{height:36px;width:auto;flex-shrink:0}
 .h-title{flex:1;min-width:0}
-.h-title h1{font-size:.85rem;font-weight:700;color:var(--navy);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
-.h-title p{display:none}
+.h-title h1{font-size:.95rem;font-weight:800;color:var(--navy);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
 .h-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.dot{width:6px;height:6px;border-radius:50%;background:#9ca3af}
+.dot{width:7px;height:7px;border-radius:50%;background:#9ca3af;flex-shrink:0}
 .dot.on{background:#16a34a}.dot.err{background:#dc2626}
-.status-lbl{display:none}
-.hbtn{background:var(--blue);border:none;color:var(--white);font-size:.78rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:7px 13px;border-radius:6px;cursor:pointer;min-height:36px}
-.hbtn:active{opacity:.85}
+/* Admin button now lives on the Info page, not in the header */
+.admin-page-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1.5px solid var(--muted);color:var(--muted);font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:8px 16px;border-radius:8px;cursor:pointer;min-height:40px}
+.admin-page-btn:active{background:var(--surface)}
 
 /* ── NAV TABS ── */
 .nav{display:flex;gap:6px;padding:12px 12px 0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
@@ -215,7 +214,6 @@ select.form-inp{cursor:pointer}
   </div>
   <div class="h-right">
     <div class="dot" id="dot" title="Connection status"></div>
-    <button class="hbtn" onclick="openAdmin()">Admin</button>
   </div>
 </header>
 
@@ -274,14 +272,28 @@ const HOLES = 18;
 const db = getDatabase(initializeApp(firebaseConfig));
 const root = ref(db, "golf");
 
+function defaultState() {
+  return {
+    config: { numTeams: 6, numPlayers: 4, tournamentName: "Men's Retreat Golf Tournament" },
+    teams: Object.fromEntries(Array.from({length:6},(_,t)=>[t,{
+      name:"Team "+(t+1),
+      players:Object.fromEntries(Array.from({length:4},(_,p)=>[p,{name:"Player "+(p+1)}]))
+    }])),
+    scores: {}
+  };
+}
+
 // ── STATE ──────────────────────────────────────────────────────────────────
-let state = null;
+let state = defaultState(); // render immediately — Firebase will update when connected
 let tab = "home";           // "home" | "setup" | "lb" | 0..N
 let openHole = null;        // currently expanded hole index on scoring panel
 let unlocked = new Set();   // tabs unlocked this session
 let pendingTab = null;
 let saveTimer = null;
 let remoteWrite = false;
+
+// Render immediately so page is never blank
+render();
 
 // ── FIREBASE ───────────────────────────────────────────────────────────────
 onValue(root, snap => {
@@ -305,8 +317,8 @@ onValue(root, snap => {
 }, () => setStatus(false));
 
 function setStatus(ok) {
-  document.getElementById("dot").className = "dot" + (ok ? " on" : " err");
-  document.getElementById("slbl").textContent = ok ? "live" : "offline";
+  const dot = document.getElementById("dot");
+  if (dot) dot.className = "dot" + (ok ? " on" : " err");
 }
 
 function normalise() {
@@ -324,16 +336,7 @@ function normalise() {
   }
 }
 
-function defaultState() {
-  return {
-    config: { numTeams: 6, numPlayers: 4, tournamentName: "Men's Retreat Golf Tournament" },
-    teams: Object.fromEntries(Array.from({length:6},(_,t)=>[t,{
-      name:"Team "+(t+1),
-      players:Object.fromEntries(Array.from({length:4},(_,p)=>[p,{name:"Player "+(p+1)}]))
-    }])),
-    scores: {}
-  };
-}
+
 
 // Per-cell transaction — safe for simultaneous writes from multiple devices
 function writeScore(t, h, p, val) {
@@ -384,10 +387,10 @@ function tpin(t) { return state?.teams?.[t]?.pin || ""; }
 function render() {
   if (!state) return;
   const nt = state.config.numTeams || 0;
-  // On first load: if there is tournament data, show home; otherwise setup
+  // Redirect away from setup on first load if setup not yet unlocked
   if (tab === "setup" && nt > 0 && !unlocked.has("setup")) tab = "home";
-  if (tab === "home" && nt === 0) tab = "setup";
-  if (typeof tab === "number" && tab >= nt) tab = Math.max(0, nt-1);
+  // Clamp numeric team tab if teams were removed
+  if (typeof tab === "number" && tab >= nt) tab = nt > 0 ? Math.max(0, nt-1) : "home";
   renderNav();
   renderMain();
 }
@@ -395,8 +398,8 @@ function render() {
 function renderNav() {
   const nt = state?.config?.numTeams || 0;
   const el = document.getElementById("nav");
-  let h = "";
-  if (nt > 0) h += `<button class="ntab home${tab==="home"?" active":""}" onclick="_tab('home')">Info</button>`;
+  // Info and Setup are always visible
+  let h = `<button class="ntab home${tab==="home"?" active":""}" onclick="_tab('home')">Info</button>`;
   h += `<button class="ntab setup${tab==="setup"?" active":""}" onclick="_tab('setup')">Setup</button>`;
   for (let t = 0; t < nt; t++) {
     h += `<button class="ntab${tab===t?" active":""}" onclick="_tab(${t})">${esc(tname(t))}</button>`;
@@ -579,6 +582,13 @@ function renderHome() {
     </div>`;
   }
 
+  const setupPrompt = nt === 0 ? `<div class="welcome-section">
+    <div class="rule-item" style="border-color:var(--blue);background:#eff6ff">
+      <span class="rule-num" style="background:var(--navy)">★</span>
+      <span class="rule-text"><strong>Admin:</strong> tap <strong>Setup</strong> above to configure teams and player names before the round begins.</span>
+    </div>
+  </div>` : "";
+
   return `<div class="welcome-card">
     <div class="welcome-hero">
       <h2>Welcome to the 1st Annual<br>Open Door Men's Retreat<br>Golf Tournament</h2>
@@ -586,6 +596,8 @@ function renderHome() {
     </div>
     <div class="welcome-body">
       <p class="welcome-intro">Find your team below, then tap your team name to open the scorecard. Enter every player's score for each hole — the app will automatically track your team's best score.</p>
+
+      ${setupPrompt}
 
       ${nt > 0 ? `<div class="welcome-section">
         <h3>Teams &amp; Players</h3>
@@ -617,6 +629,11 @@ function renderHome() {
           </div>
         </div>
       </div>
+    </div>
+    <div class="welcome-section" style="border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:center">
+      <button class="admin-page-btn" onclick="openAdmin()">
+        <span>⚙</span> Admin Reset
+      </button>
     </div>
   </div>`;
 }
