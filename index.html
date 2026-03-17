@@ -177,8 +177,10 @@ select.form-inp{cursor:pointer}
 .player-inp:focus{outline:none;border-color:var(--blue)}
 .pin-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border-top:1px solid var(--border)}
 .pin-row label{font-size:.7rem;color:var(--muted);white-space:nowrap}
-.pin-inp{width:100px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;color:var(--text);letter-spacing:.08em;min-height:36px}
+.pin-inp{width:90px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;color:var(--text);letter-spacing:.08em;min-height:36px}
 .pin-inp:focus{outline:none;border-color:var(--blue)}
+.gen-pin-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:.7rem;font-weight:700;letter-spacing:.03em;padding:5px 9px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.gen-pin-btn:active{background:var(--surface)}
 .row-btns{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
 .team-count{font-size:.8rem;color:var(--muted)}
 .btn{display:inline-flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:10px 18px;border-radius:8px;cursor:pointer;min-height:44px;border:none;transition:opacity .12s}
@@ -205,6 +207,9 @@ select.form-inp{cursor:pointer}
 .mbtn-unlock{background:var(--blue);color:var(--white)}
 
 /* ── SAVE PILL ── */
+.view-only-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fef9ec;border-bottom:1px solid #f0d060;font-size:.8rem;color:#7a5f00;font-weight:600}
+.unlock-score-btn{background:var(--gold);border:none;color:var(--white);font-size:.75rem;font-weight:700;letter-spacing:.03em;padding:6px 12px;border-radius:6px;cursor:pointer}
+.unlock-score-btn:active{opacity:.85}
 .save-pill{position:fixed;bottom:16px;right:16px;background:var(--blue);color:var(--white);font-size:.72rem;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200}
 .save-pill.show{opacity:1}
 
@@ -439,6 +444,13 @@ function renderTeam(ti) {
   let chips = "";
   for (let p = 0; p < np; p++) chips += `<div class="pchip"><span class="pchip-n">${p+1}</span>${esc(pname(ti,p))}</div>`;
 
+  // View-only banner if team has PIN but not yet unlocked
+  const viewOnlyBanner = _viewOnly(ti) ? `
+    <div class="view-only-bar">
+      <span>👁 View only</span>
+      <button class="unlock-score-btn" onclick="_unlockTeam(${ti})">Enter PIN to Score</button>
+    </div>` : "";
+
   // Hole cards
   let frontCards = "", backCards = "";
   let frontTotal = 0, frontHoles = 0, backTotal = 0, backHoles = 0;
@@ -458,6 +470,7 @@ function renderTeam(ti) {
         <input class="score-inp${isBest?" best":""}" type="number" inputmode="numeric"
           min="1" max="20" value="${esc(v)}" placeholder="—"
           data-t="${ti}" data-h="${h}" data-p="${p}"
+          ${_viewOnly(ti) ? "disabled style='opacity:.45;pointer-events:none'" : ""}
           onchange="_sc(${ti},${h},${p},this.value)"
           oninput="_sci(${ti},${h},${p},this.value)">
       </div>`;
@@ -487,6 +500,7 @@ function renderTeam(ti) {
       </div>
     </div>
     <div class="players-strip">${chips}</div>
+    ${viewOnlyBanner}
     <div class="holes-list">
       <div class="nine-divider">Front 9</div>
       ${frontCards}
@@ -766,8 +780,9 @@ function renderSetup() {
         ${players}
         <div class="pin-row">
           <label>Team PIN:</label>
-          <input class="pin-inp" type="text" inputmode="numeric" maxlength="8" value="${pin}" placeholder="optional"
+          <input class="pin-inp" id="pin-inp-${t}" type="text" inputmode="numeric" maxlength="8" value="${pin}" placeholder="optional"
             onchange="_stp(${t},this.value)" oninput="_stp(${t},this.value)">
+          <button class="gen-pin-btn" onclick="_genPin(${t})">🎲 Generate</button>
         </div>
       </div>
     </div>`;
@@ -803,6 +818,17 @@ function renderSetup() {
 }
 
 // ── TAB NAVIGATION ─────────────────────────────────────────────────────────
+// Returns true if team has a PIN and has not been unlocked this session
+function _viewOnly(ti) {
+  return typeof ti === "number" && tpin(ti) && !unlocked.has(ti);
+}
+
+// Trigger the PIN modal for scoring a specific team
+window._unlockTeam = (ti) => {
+  pendingTab = ti;
+  showLock(tname(ti), "Enter the PIN to score for this team.");
+};
+
 window._tab = (idx) => {
   if (idx === "home") { tab = "home"; openHole = null; renderNav(); renderMain(); return; }
   if (idx === "setup" && !unlocked.has("setup")) {
@@ -812,12 +838,8 @@ window._tab = (idx) => {
   }
   if (typeof idx === "number" && !unlocked.has(idx)) {
     const p = tpin(idx);
-    if (p) {
-      pendingTab = idx;
-      showLock(tname(idx), "Enter the PIN for this team.");
-      return;
-    }
-    unlocked.add(idx);
+    if (!p) unlocked.add(idx); // no PIN = full access
+    // if PIN exists, fall through — loads in view-only mode
   }
   tab = idx;
   openHole = null;
@@ -829,6 +851,15 @@ window._tab = (idx) => {
 window._stn  = (t,v)  => { if(!state.teams[t]) state.teams[t]={name:v,players:{}}; state.teams[t].name=v||"Team "+(t+1); renderNav(); writeFull(); };
 window._spn  = (t,p,v)=> { if(!state.teams[t]) state.teams[t]={name:"Team "+(t+1),players:{}}; if(!state.teams[t].players[p]) state.teams[t].players[p]={}; state.teams[t].players[p].name=v||"Player "+(p+1); writeFull(); };
 window._stp  = (t,v)  => { if(!state.teams[t]) state.teams[t]={name:"Team "+(t+1),players:{}}; state.teams[t].pin=v.trim(); if(!v.trim()) unlocked.add(t); writeFull(); };
+window._genPin = (t)  => {
+  const pin = String(Math.floor(1000 + Math.random() * 9000));
+  if(!state.teams[t]) state.teams[t]={name:"Team "+(t+1),players:{}};
+  state.teams[t].pin = pin;
+  unlocked.add(t); // treat as unlocked since admin just set it
+  writeFull();
+  const el = document.getElementById("pin-inp-"+t);
+  if (el) { el.value = pin; el.style.background="#d1fae5"; setTimeout(()=>el.style.background="",1200); }
+};
 window._stname = (v)  => { state.config.tournamentName=v; writeFull(); };
 window._snp  = (n)    => { state.config.numPlayers=n; writeFull(); renderMain(); };
 window._addTeam = ()  => { const t=state.config.numTeams; state.config.numTeams++; if(!state.teams[t]) state.teams[t]={name:"Team "+(t+1),players:{}}; writeFull(); renderNav(); renderMain(); };
@@ -864,6 +895,8 @@ window.doUnlock = () => {
   const target = pendingTab;
   if (entered === ADMIN_PIN || (typeof target==="number" && entered===tpin(target))) {
     unlocked.add(target);
+    // Re-render team panel so inputs activate (view-only → editable)
+    if (typeof target === "number" && tab === target) { renderMain(); }
     document.getElementById("lockModal").classList.remove("open");
     tab = target; openHole = null;
     renderNav(); renderMain();
