@@ -18,6 +18,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Open Door Golf</title>
+<link rel="manifest" href="manifest.json">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -76,7 +77,7 @@ header img{height:36px;width:auto;flex-shrink:0}
 .hole-top{display:flex;align-items:center;padding:10px 12px;gap:8px;cursor:pointer;user-select:none}
 .hole-num{font-size:1rem;font-weight:700;color:var(--muted);min-width:52px}
 .hole-num strong{font-size:1.1rem;color:var(--text)}
-.hole-best{margin-left:auto;font-size:1.5rem;font-weight:800;color:var(--green);min-width:36px;text-align:right}
+.hole-best{font-size:1.5rem;font-weight:800;color:var(--green);min-width:36px;text-align:right}
 .hole-best.empty{color:var(--border)}
 .hole-chevron{color:var(--muted);font-size:.8rem;transition:transform .15s;margin-left:4px}
 .hole-card.open .hole-chevron{transform:rotate(180deg)}
@@ -90,6 +91,13 @@ header img{height:36px;width:auto;flex-shrink:0}
 .score-inp::-webkit-inner-spin-button,.score-inp::-webkit-outer-spin-button{-webkit-appearance:none}
 .score-inp:focus{outline:none;border-color:var(--blue)}
 .score-inp.best{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+.score-stepper{display:flex;align-items:center;flex-shrink:0}
+.score-step-btn{width:38px;height:48px;border:2px solid var(--border);background:var(--white);color:var(--text);font-size:1.3rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+.score-step-btn:first-child{border-radius:8px 0 0 8px;border-right:none}
+.score-step-btn:last-child{border-radius:0 8px 8px 0;border-left:none}
+.score-step-btn:active{background:var(--silver)}
+.score-step-btn:disabled{opacity:.3;pointer-events:none}
+.score-inp.stepped{width:44px;border-radius:0;border-left:1px solid var(--border);border-right:1px solid var(--border)}
 
 /* Nine totals */
 .nine-total{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f0fdf4;border-top:1px solid var(--green-border);font-size:.82rem;font-weight:700;color:var(--green)}
@@ -115,6 +123,12 @@ header img{height:36px;width:auto;flex-shrink:0}
 .lb-score.pend{font-size:1.1rem;color:var(--border)}
 .lb-holes{font-size:.7rem;color:var(--muted)}
 .lb-empty{padding:24px;text-align:center;color:var(--muted);font-size:.85rem}
+.stp-badge{display:inline-block;font-size:.72rem;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:5px;vertical-align:middle}
+.stp-under{background:#dcfce7;color:#166534}
+.stp-over{background:#fee2e2;color:#dc2626}
+.stp-even{background:#f0f0f0;color:#374151}
+.total-stp{font-size:.82rem;font-weight:800;color:var(--gold-light);margin-left:6px;opacity:.9}
+.hole-par{font-size:.7rem;color:var(--muted);margin-right:auto;padding-left:4px}
 /* ── WELCOME SCREEN ── */
 .welcome-card{background:var(--white);border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.18)}
 .welcome-hero{background:var(--navy);padding:22px 20px 18px;text-align:center;border-bottom:3px solid var(--blue)}
@@ -146,7 +160,14 @@ header img{height:36px;width:auto;flex-shrink:0}
 .welcome-team-head .go-btn{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--blue);color:var(--white);border:none;border-radius:6px;padding:5px 10px;flex-shrink:0}
 .welcome-team-players{padding:0 12px 10px;display:flex;flex-wrap:wrap;gap:5px}
 .welcome-player{font-size:.75rem;color:rgba(255,255,255,.8);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:3px 9px}
+.team-tile-badge{font-size:.7rem;color:rgba(255,255,255,.65);padding:0 12px 8px;letter-spacing:.02em}
 
+.lb-complete{font-size:.78rem;color:var(--green);margin-left:5px;font-weight:800}
+.lb-thru-bar{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.lb-thru-label{font-size:.8rem;color:var(--text);white-space:nowrap;min-width:120px}
+.lb-thru-slider{flex:1;accent-color:var(--blue);height:4px}
+.lb-refresh-btn{background:transparent;border:1px solid rgba(255,255,255,.3);color:var(--white);font-size:1.1rem;width:34px;height:34px;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .3s}
+.lb-refresh-btn:active{background:rgba(255,255,255,.15)}
 .lb-section-head{padding:10px 16px;background:var(--surface);border-top:2px solid var(--border);border-bottom:1px solid var(--border)}
 .lb-section-head h3{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .lb-player-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--border)}
@@ -191,6 +212,19 @@ select.form-inp{cursor:pointer}
 .pin-row label{font-size:.7rem;color:var(--muted);white-space:nowrap}
 .pin-inp{width:90px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;color:var(--text);letter-spacing:.08em;min-height:36px}
 .pin-inp:focus{outline:none;border-color:var(--blue)}
+.par-section{margin-top:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.par-section-head{background:var(--surface);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.par-section-head h3{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.par-total{font-size:.8rem;color:var(--text)}
+.par-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.nine-par-group{padding:8px 10px}
+.nine-par-group+.nine-par-group{border-left:1px solid var(--border)}
+.nine-par-label{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.par-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.par-row label{font-size:.75rem;color:var(--muted);min-width:28px}
+.par-inp{width:52px;height:36px;text-align:center;border:1.5px solid var(--border);border-radius:6px;font-size:.9rem;font-weight:700;color:var(--text);-moz-appearance:textfield}
+.par-inp::-webkit-inner-spin-button,.par-inp::-webkit-outer-spin-button{-webkit-appearance:none}
+.par-inp:focus{outline:none;border-color:var(--blue)}
 .gen-pin-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:.7rem;font-weight:700;letter-spacing:.03em;padding:5px 9px;border-radius:6px;cursor:pointer;white-space:nowrap}
 .gen-pin-btn:active{background:var(--surface)}
 .row-btns{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
@@ -217,9 +251,15 @@ select.form-inp{cursor:pointer}
 .mbtn-cancel{background:var(--silver);color:var(--text)}
 .mbtn-action{background:var(--red);color:var(--white)}
 .mbtn-unlock{background:var(--blue);color:var(--white)}
+.mbtn-archive{background:var(--green);color:var(--white)}
+.archive-entry{border-bottom:2px solid var(--border)}
+.archive-entry-head{padding:10px 16px;background:var(--surface);font-size:.8rem;font-weight:700;color:var(--navy);letter-spacing:.03em;border-bottom:1px solid var(--border)}
 
 /* ── SAVE PILL ── */
 .view-only-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#fef9ec;border-bottom:1px solid #f0d060;font-size:.8rem;color:#7a5f00;font-weight:600}
+.spectator-btn{background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.5);font-size:.75rem;font-weight:700;letter-spacing:.04em;padding:6px 10px;border-radius:7px;cursor:pointer;min-height:34px;text-transform:uppercase}
+.spectator-btn.active{background:rgba(255,255,255,.15);color:var(--white);border-color:rgba(255,255,255,.5)}
+.spectator-bar{padding:8px 14px;background:#1e3a5f;border-bottom:1px solid rgba(255,255,255,.1);font-size:.75rem;color:rgba(255,255,255,.7);text-align:center;letter-spacing:.04em}
 .unlock-score-btn{background:var(--gold);border:none;color:var(--white);font-size:.75rem;font-weight:700;letter-spacing:.03em;padding:6px 12px;border-radius:6px;cursor:pointer}
 .unlock-score-btn:active{opacity:.85}
 .save-pill{position:fixed;bottom:16px;right:16px;background:var(--blue);color:var(--white);font-size:.72rem;padding:6px 14px;border-radius:20px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200}
@@ -238,6 +278,7 @@ select.form-inp{cursor:pointer}
     <h1>Men's Retreat Golf</h1>
   </div>
   <div class="h-right">
+    <button class="spectator-btn" id="spectator-btn" onclick="window._toggleSpectator()">👁 Spectate</button>
     <div class="dot" id="dot" title="Connection status"></div>
   </div>
 </header>
@@ -254,6 +295,7 @@ select.form-inp{cursor:pointer}
     <div class="modal-err" id="adminErr"></div>
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" onclick="closeAdmin()">Cancel</button>
+      <button class="mbtn mbtn-archive" onclick="window.doArchiveThenReset()">Archive &amp; Reset</button>
       <button class="mbtn mbtn-action" onclick="doReset()">Reset Scores</button>
     </div>
   </div>
@@ -277,7 +319,7 @@ select.form-inp{cursor:pointer}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, set, onValue, runTransaction, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // ── CONFIG — replace these values ──────────────────────────────────────────
 const firebaseConfig = {
@@ -299,7 +341,7 @@ const root = ref(db, "golf");
 
 function defaultState() {
   return {
-    config: { numTeams: 6, numPlayers: 4, tournamentName: "Men's Retreat Golf Tournament" },
+    config: { numTeams: 6, numPlayers: 4, tournamentName: "Men's Retreat Golf Tournament", par: [4,4,3,4,5,4,3,4,4, 4,3,5,4,4,3,4,4,5] },
     teams: Object.fromEntries(Array.from({length:6},(_,t)=>[t,{
       name:"Team "+(t+1),
       players:Object.fromEntries(Array.from({length:4},(_,p)=>[p,{name:"Player "+(p+1)}]))
@@ -316,6 +358,9 @@ let unlocked = new Set();   // tabs unlocked this session
 let pendingTab = null;
 let saveTimer = null;
 let remoteWrite = false;
+let lbThru = 18;
+let spectatorMode = false;
+let archiveLoading = false;
 
 // Render immediately so page is never blank
 render();
@@ -351,6 +396,13 @@ function normalise() {
   const np = state.config.numPlayers || 4;
   if (!state.teams) state.teams = {};
   if (!state.scores) state.scores = {};
+  // Normalize par array (Firebase may return object not array)
+  if (state.config.par && !Array.isArray(state.config.par)) {
+    state.config.par = Array.from({length:18}, (_,i) => +(state.config.par[i] ?? 4));
+  }
+  if (!state.config.par || state.config.par.length !== 18) {
+    state.config.par = [4,4,3,4,5,4,3,4,4, 4,3,5,4,4,3,4,4,5];
+  }
   for (let t = 0; t < nt; t++) {
     if (!state.teams[t]) state.teams[t] = { name: "Team " + (t+1), players: {} };
     if (!state.teams[t].players) state.teams[t].players = {};
@@ -408,6 +460,30 @@ function teamTotal(t) {
 function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function tpin(t) { return state?.teams?.[t]?.pin || ""; }
 
+function holePar(h) {
+  const p = state?.config?.par;
+  return (p && p[h] != null) ? +p[h] : 4;
+}
+function coursePar() {
+  return Array.from({length:18}, (_,h) => holePar(h)).reduce((a,b)=>a+b,0);
+}
+function fmtVsPar(s, par) {
+  if (s == null || par == null || isNaN(s) || isNaN(par)) return "";
+  const d = s - par;
+  if (d === 0) return "E";
+  return (d > 0 ? "+" : "") + d;
+}
+function teamParPlayed(t) {
+  let p = 0;
+  for (let h = 0; h < 18; h++) { if (best(t,h) !== null) p += holePar(h); }
+  return p;
+}
+function teamTotalThru(t, thru) {
+  let total = 0, holes = 0;
+  for (let h = 0; h < thru; h++) { const b = best(t,h); if (b !== null) { total+=b; holes++; } }
+  return {total, holes};
+}
+
 // ── RENDER ─────────────────────────────────────────────────────────────────
 function render() {
   if (!state) return;
@@ -430,6 +506,7 @@ function renderNav() {
     hbtn.style.visibility = "visible";
     if (tab === "setup") ttl.textContent = "Setup";
     else if (tab === "lb") ttl.textContent = "Leaderboard";
+    else if (tab === "archive") ttl.textContent = "Archive";
     else ttl.textContent = tname(tab);
   }
 }
@@ -439,6 +516,11 @@ function renderMain() {
   if (tab === "home")  { el.innerHTML = renderHome(); return; }
   if (tab === "setup") { el.innerHTML = renderSetup(); return; }
   if (tab === "lb")    { el.innerHTML = renderLB(); return; }
+  if (tab === "archive") {
+    el.innerHTML = `<div class="lb-card"><div class="lb-head" style="background:var(--navy)"><h2>Archive</h2></div><div class="lb-empty">Loading…</div></div>`;
+    renderArchive(el);
+    return;
+  }
   el.innerHTML = renderTeam(tab);
   // Re-attach open hole
   if (openHole !== null) {
@@ -456,8 +538,10 @@ function renderTeam(ti) {
   let chips = "";
   for (let p = 0; p < np; p++) chips += `<div class="pchip"><span class="pchip-n">${p+1}</span>${esc(pname(ti,p))}</div>`;
 
-  // View-only banner if team has PIN but not yet unlocked
-  const viewOnlyBanner = _viewOnly(ti) ? `
+  // View-only banner if team has PIN but not yet unlocked, or spectator mode
+  const viewOnlyBanner = spectatorMode
+    ? `<div class="spectator-bar">👁 Live view — scores update in real time</div>`
+    : _viewOnly(ti) ? `
     <div class="view-only-bar">
       <span>👁 View only</span>
       <button class="unlock-score-btn" onclick="_unlockTeam(${ti})">Enter PIN to Score</button>
@@ -467,6 +551,7 @@ function renderTeam(ti) {
   let frontCards = "", backCards = "";
   let frontTotal = 0, frontHoles = 0, backTotal = 0, backHoles = 0;
 
+  const readOnly = _isReadOnly(ti);
   for (let h = 0; h < HOLES; h++) {
     const b = best(ti, h);
     if (h < 9) { if (b!==null){frontTotal+=b;frontHoles++;} }
@@ -475,22 +560,32 @@ function renderTeam(ti) {
     const isOpen = openHole === h;
     let rows = "";
     for (let p = 0; p < np; p++) {
-      const v = score(ti, h, p);
-      const isBest = v !== "" && +v === b && b !== null;
-      rows += `<div class="score-row">
-        <span class="score-pname${isBest?" best-p":""}">${esc(pname(ti,p))}</span>
-        <input class="score-inp${isBest?" best":""}" type="number" inputmode="numeric"
-          min="1" max="20" value="${esc(v)}" placeholder="—"
-          data-t="${ti}" data-h="${h}" data-p="${p}"
-          ${_viewOnly(ti) ? "disabled style='opacity:.45;pointer-events:none'" : ""}
-          onchange="_sc(${ti},${h},${p},this.value)"
-          oninput="_sci(${ti},${h},${p},this.value)">
-      </div>`;
+      const sc = score(ti, h, p);
+      const bestP = b;
+      const isBest = sc !== "" && +sc === bestP && bestP !== null;
+      if (spectatorMode) {
+        rows += `<div class="score-row">
+          <span class="score-pname${isBest?" best-p":""}">${esc(pname(ti,p))}</span>
+          <input class="score-inp${isBest?" best":""}" type="number" inputmode="numeric"
+            min="1" max="20" value="${esc(sc)}" placeholder="—"
+            data-t="${ti}" data-h="${h}" data-p="${p}" disabled readonly>
+        </div>`;
+      } else {
+        rows += `<div class="score-row">
+          <span class="score-pname${isBest?" best-p":""}">${esc(pname(ti,p))}</span>
+          <div class="score-stepper">
+            <button class="score-step-btn" onclick="window._step(${ti},${h},${p},-1)"${readOnly?' disabled':''}>−</button>
+            <input class="score-inp stepped${isBest?" best":""}" type="number" inputmode="numeric" min="1" max="20" value="${esc(sc)}" placeholder="—" data-t="${ti}" data-h="${h}" data-p="${p}" onchange="window._sc(${ti},${h},${p},this.value)" oninput="window._sci(${ti},${h},${p},this.value)"${readOnly?' disabled readonly':''}>
+            <button class="score-step-btn" onclick="window._step(${ti},${h},${p},+1)"${readOnly?' disabled':''}>+</button>
+          </div>
+        </div>`;
+      }
     }
 
     const card = `<div class="hole-card${b!==null?" has-best":""}${isOpen?" open":""}" data-hole="${h}" onclick="_toggle(${h})">
       <div class="hole-top">
         <span class="hole-num">Hole <strong>${h+1}</strong></span>
+        <span class="hole-par">par ${holePar(h)}</span>
         <span class="hole-best${b===null?" empty":""}">${b!==null?b:"—"}</span>
         <span class="hole-chevron">▼</span>
       </div>
@@ -507,7 +602,7 @@ function renderTeam(ti) {
     <div class="card-head">
       <h2>${esc(tname(ti))}</h2>
       <div class="total">
-        <div class="total-num">${holes>0?total:"—"}</div>
+        <div class="total-num">${holes>0?total:"—"}${holes>0?`<span class="total-stp">${fmtVsPar(total,teamParPlayed(ti))}</span>`:""}</div>
         <div class="total-sub">${holes}/18 holes</div>
       </div>
     </div>
@@ -546,6 +641,7 @@ window._sc = (t, h, p, val) => {
   const parsed = val === "" ? null : (isNaN(+val) ? null : +val);
   state.scores[t][h][p] = parsed;
   writeScore(t, h, p, val);
+  if (navigator.vibrate) navigator.vibrate(30);
   _refreshHole(t, h);
 };
 
@@ -556,6 +652,26 @@ window._sci = (t, h, p, val) => {
   if (!state.scores[t][h]) state.scores[t][h] = {};
   state.scores[t][h][p] = val === "" ? null : (isNaN(+val) ? null : +val);
   _refreshHole(t, h);
+};
+window._step = (t, h, p, delta) => {
+  const inp = document.querySelector(`.hole-card[data-hole="${h}"] input[data-p="${p}"]`);
+  const cur = inp ? (parseInt(inp.value, 10) || 0) : 0;
+  const next = Math.max(1, Math.min(20, cur + delta));
+  if (inp) { inp.value = next; }
+  window._sc(t, h, p, String(next));
+};
+window._lbThru = (n) => { lbThru = n; renderMain(); };
+window._toggleSpectator = () => {
+  spectatorMode = !spectatorMode;
+  const btn = document.getElementById("spectator-btn");
+  if (btn) btn.classList.toggle("active", spectatorMode);
+  render();
+};
+window._lbRefresh = () => {
+  const btn = document.querySelector(".lb-refresh-btn");
+  if (btn) { btn.style.transform="rotate(360deg)"; btn.style.transition="transform .4s"; }
+  renderMain();
+  setTimeout(()=>{ const b=document.querySelector(".lb-refresh-btn"); if(b){b.style.transform="";b.style.transition="";} },500);
 };
 
 // Surgically update a single hole card's highlights and the team total
@@ -584,7 +700,17 @@ function _refreshHole(ti, h) {
   const { total, holes } = teamTotal(ti);
   const totalNum = document.querySelector(".total-num");
   const totalSub = document.querySelector(".total-sub");
-  if (totalNum) totalNum.textContent = holes > 0 ? total : "—";
+  if (totalNum) {
+    totalNum.textContent = holes > 0 ? total : "—";
+    if (holes > 0) {
+      let stpSpan = totalNum.querySelector(".total-stp");
+      if (!stpSpan) { stpSpan = document.createElement("span"); stpSpan.className = "total-stp"; totalNum.appendChild(stpSpan); }
+      stpSpan.textContent = fmtVsPar(total, teamParPlayed(ti));
+    } else {
+      const stpSpan = totalNum.querySelector(".total-stp");
+      if (stpSpan) stpSpan.remove();
+    }
+  }
   if (totalSub) totalSub.textContent = `${holes}/18 holes`;
 
   // Update nine totals
@@ -608,12 +734,19 @@ function renderHome() {
     for (let p = 0; p < np; p++) {
       playerChips += `<span class="welcome-player">${esc(pname(t,p))}</span>`;
     }
+    const {total: tileTotal, holes: tileHoles} = teamTotal(t);
+    const stp = tileHoles > 0 ? fmtVsPar(tileTotal, teamParPlayed(t)) : null;
+    const stpColor = stp === "E" ? "var(--gold-light)" : stp && stp[0]==="-" ? "#86efac" : stp ? "#fca5a5" : "";
+    const badge = tileHoles > 0
+      ? `<div class="team-tile-badge">Thru ${tileHoles} &bull; <span style="color:${stpColor};font-weight:800">${stp}</span></div>`
+      : "";
     teamsHtml += `<button class="welcome-team" onclick="_tab(${t})">
       <div class="welcome-team-head">
         <h4>${esc(tname(t))}</h4>
         <span class="go-btn">Score →</span>
       </div>
       <div class="welcome-team-players">${playerChips}</div>
+      ${badge}
     </button>`;
   }
 
@@ -679,6 +812,11 @@ function renderHome() {
           <span class="action-label">Admin Reset</span>
           <span class="action-sub">Clear all scores</span>
         </button>
+        <button class="action-tile" onclick="window._tab('archive')">
+          <span class="action-icon">📋</span>
+          <span class="action-label">Archive</span>
+          <span class="action-sub">Past results</span>
+        </button>
       </div>
 
     </div>
@@ -691,7 +829,7 @@ function renderLB() {
 
   // ── Team scores ──────────────────────────────────────────────────────────
   const teamRows = Array.from({length:nt},(_,i) => {
-    const {total,holes}=teamTotal(i); return {name:tname(i),total,holes,idx:i};
+    const {total,holes}=teamTotalThru(i,lbThru); return {name:tname(i),total,holes,idx:i};
   }).sort((a,b) => {
     if (a.holes===0&&b.holes===0) return 0;
     if (a.holes===0) return 1; if (b.holes===0) return -1;
@@ -701,14 +839,18 @@ function renderLB() {
   const hasAny = teamRows.some(r => r.holes > 0);
   const rnkClass = i => i===0?"g":i===1?"s":i===2?"b":"";
 
-  const teamHtml = teamRows.map((r,i) => `<div class="lb-row${i===0&&r.holes>0?" leader":""}">
+  const teamHtml = teamRows.map((r,i) => {
+    const stpStr = r.holes > 0 ? fmtVsPar(r.total, teamParPlayed(r.idx)) : "";
+    const stpCls = stpStr === "E" ? "stp-even" : stpStr && stpStr[0]==="-" ? "stp-under" : "stp-over";
+    return `<div class="lb-row${i===0&&r.holes>0?" leader":""}">
     <span class="lb-rank ${rnkClass(i)}">${i+1}</span>
-    <span class="lb-name${i===0&&r.holes>0?" leader":""}">${esc(r.name)}</span>
+    <span class="lb-name${i===0&&r.holes>0?" leader":""}">${esc(r.name)}${r.holes===18?'<span class="lb-complete">✓</span>':''}</span>
     <div class="lb-detail">
-      ${r.holes>0 ? `<div class="lb-score${i===0?" leader":""}">${r.total}</div>` : `<div class="lb-score pend">—</div>`}
+      ${r.holes>0 ? `<div class="lb-score${i===0?" leader":""}">${r.total}${stpStr?`<span class="stp-badge ${stpCls}">${stpStr}</span>`:""}</div>` : `<div class="lb-score pend">—</div>`}
       <div class="lb-holes">${r.holes}/18 holes</div>
     </div>
-  </div>`).join("");
+  </div>`;
+  }).join("");
 
   // ── Individual player scores ─────────────────────────────────────────────
   // Each player's score for a hole is their individual entry (not the team best)
@@ -717,15 +859,16 @@ function renderLB() {
   for (let t = 0; t < nt; t++) {
     for (let p = 0; p < np; p++) {
       let total = 0, holes = 0;
+      let parPlayed = 0;
       for (let h = 0; h < HOLES; h++) {
         const v = state?.scores?.[t]?.[h]?.[p];
         const n = +v;
-        if (v != null && !isNaN(n) && n > 0) { total += n; holes++; }
+        if (v != null && !isNaN(n) && n > 0) { total += n; holes++; parPlayed += holePar(h); }
       }
       players.push({
         name: pname(t, p),
         team: tname(t),
-        total, holes
+        total, holes, parPlayed
       });
     }
   }
@@ -740,6 +883,8 @@ function renderLB() {
 
   const playerHtml = players.map((p,i) => {
     const isLeader = i===0 && p.holes>0;
+    const pStpStr = p.holes > 0 ? fmtVsPar(p.total, p.parPlayed) : "";
+    const pStpCls = pStpStr === "E" ? "stp-even" : pStpStr && pStpStr[0]==="-" ? "stp-under" : "stp-over";
     return `<div class="lb-player-row${isLeader?" p-leader":""}">
       <span class="lb-player-rank ${rnkClass(i)}">${i+1}</span>
       <div class="lb-player-info">
@@ -747,7 +892,7 @@ function renderLB() {
         <div class="lb-player-team">${esc(p.team)}</div>
       </div>
       <div class="lb-player-score">
-        ${p.holes>0 ? `<div class="lb-player-num${isLeader?" p-leader":""}">${p.total}</div>` : `<div class="lb-player-num pend">—</div>`}
+        ${p.holes>0 ? `<div class="lb-player-num${isLeader?" p-leader":""}">${p.total}${pStpStr?`<span class="stp-badge ${pStpCls}">${pStpStr}</span>`:""}</div>` : `<div class="lb-player-num pend">—</div>`}
         <div class="lb-player-holes">${p.holes}/18</div>
       </div>
     </div>`;
@@ -757,6 +902,11 @@ function renderLB() {
     <div class="lb-head">
       <h2>Leaderboard</h2>
       <span class="tname">${esc(state.config.tournamentName||"")}</span>
+      <button class="lb-refresh-btn" onclick="window._lbRefresh()" title="Refresh">↻</button>
+    </div>
+    <div class="lb-thru-bar">
+      <span class="lb-thru-label">Through hole <strong>${lbThru}</strong></span>
+      <input type="range" min="1" max="18" value="${lbThru}" class="lb-thru-slider" oninput="window._lbThru(+this.value)">
     </div>
     ${hasAny ? teamHtml : `<div class="lb-empty">No scores yet — tap a team tab to start.</div>`}
     <div class="lb-section-head"><h3>Individual scores</h3></div>
@@ -822,6 +972,22 @@ function renderSetup() {
         ${nt>1?`<button class="btn btn-danger" onclick="_removeTeam()">Remove Last</button>`:""}
       </div>
       <div class="team-grid">${teams}</div>
+      <div class="par-section">
+        <div class="par-section-head">
+          <h3>Hole Par Settings</h3>
+          <span class="par-total">Par <strong id="par-total-val">${coursePar()}</strong></span>
+        </div>
+        <div class="par-grid">
+          <div class="nine-par-group">
+            <div class="nine-par-label">Front 9</div>
+            ${Array.from({length:9},(_,i)=>`<div class="par-row"><label>H${i+1}</label><input class="par-inp" type="number" inputmode="numeric" min="3" max="6" value="${holePar(i)}" data-h="${i}" onchange="window._spar(${i},+this.value)"></div>`).join('')}
+          </div>
+          <div class="nine-par-group">
+            <div class="nine-par-label">Back 9</div>
+            ${Array.from({length:9},(_,i)=>`<div class="par-row"><label>H${i+10}</label><input class="par-inp" type="number" inputmode="numeric" min="3" max="6" value="${holePar(i+9)}" data-h="${i+9}" onchange="window._spar(${i+9},+this.value)"></div>`).join('')}
+          </div>
+        </div>
+      </div>
       <div class="setup-footer">
         <button class="btn btn-primary" onclick="_saveSetup()">Save &amp; Start Scoring</button>
       </div>
@@ -834,6 +1000,7 @@ function renderSetup() {
 function _viewOnly(ti) {
   return typeof ti === "number" && tpin(ti) && !unlocked.has(ti);
 }
+function _isReadOnly(ti) { return spectatorMode || _viewOnly(ti); }
 
 // Trigger the PIN modal for scoring a specific team
 window._unlockTeam = (ti) => {
@@ -843,6 +1010,7 @@ window._unlockTeam = (ti) => {
 
 window._tab = (idx) => {
   if (idx === "home") { tab = "home"; openHole = null; renderNav(); renderMain(); return; }
+  if (idx === "archive") { tab = "archive"; openHole = null; renderNav(); renderMain(); return; }
   if (idx === "setup" && !unlocked.has("setup")) {
     pendingTab = idx;
     showLock("Setup Protected", "Enter the admin PIN to access Setup.");
@@ -855,6 +1023,11 @@ window._tab = (idx) => {
   }
   tab = idx;
   openHole = null;
+  if (typeof idx === 'number') {
+    for (let h = 0; h < 18; h++) {
+      if (best(idx, h) === null) { openHole = h; break; }
+    }
+  }
   renderNav();
   renderMain();
 };
@@ -877,6 +1050,72 @@ window._snp  = (n)    => { state.config.numPlayers=n; writeFull(); renderMain();
 window._addTeam = ()  => { const t=state.config.numTeams; state.config.numTeams++; if(!state.teams[t]) state.teams[t]={name:"Team "+(t+1),players:{}}; writeFull(); renderNav(); renderMain(); };
 window._removeTeam = ()=> { if(state.config.numTeams<=1) return; state.config.numTeams--; writeFull(); if(typeof tab==="number"&&tab>=state.config.numTeams) tab=state.config.numTeams-1; renderNav(); renderMain(); };
 window._saveSetup = () => { writeFull(); tab="home"; openHole=null; unlocked.add("setup"); renderNav(); renderMain(); };
+window._spar = (h, val) => {
+  const v = isNaN(val) ? 4 : Math.max(3, Math.min(6, val));
+  if (!state.config.par) state.config.par = [4,4,3,4,5,4,3,4,4,4,3,5,4,4,3,4,4,5];
+  state.config.par[h] = v;
+  const tot = document.getElementById("par-total-val");
+  if (tot) tot.textContent = coursePar();
+  writeFull();
+};
+
+// ── ARCHIVE ─────────────────────────────────────────────────────────────────
+async function saveArchive() {
+  const nt = state.config.numTeams || 0;
+  const teams = Array.from({length:nt}, (_,t) => {
+    const {total,holes} = teamTotal(t);
+    return {name:tname(t), total, holes, stp:fmtVsPar(total,teamParPlayed(t))};
+  });
+  const entry = {
+    savedAt: new Date().toISOString(),
+    name: state.config.tournamentName || "Tournament",
+    coursePar: coursePar(),
+    teams
+  };
+  const archiveRef = ref(db, "golf/archive");
+  await push(archiveRef, entry);
+}
+
+async function renderArchive(container) {
+  try {
+    const snap = await get(ref(db, "golf/archive"));
+    const data = snap.val();
+    if (!data) {
+      container.innerHTML = `<div class="lb-card"><div class="lb-head" style="background:var(--navy)"><h2>Archive</h2></div><div class="lb-empty">No archived tournaments yet.</div></div>`;
+      return;
+    }
+    const entries = Object.entries(data).sort(([,a],[,b])=>b.savedAt.localeCompare(a.savedAt));
+    let html = `<div class="lb-card">`;
+    for (const [,entry] of entries) {
+      html += `<div class="archive-entry"><div class="archive-entry-head">${esc(entry.name)} &mdash; ${esc(entry.savedAt.slice(0,10))}</div>`;
+      (entry.teams||[]).sort((a,b)=>a.total-b.total).forEach((t,i)=>{
+        const stpCls = !t.stp?"":t.stp==="E"?"stp-even":t.stp[0]==="-"?"stp-under":"stp-over";
+        html+=`<div class="lb-row"><span class="lb-rank ${i===0?"g":i===1?"s":i===2?"b":""}">${i+1}</span><span class="lb-name">${esc(t.name)}</span><div class="lb-detail"><div class="lb-score">${t.total}<span class="stp-badge ${stpCls}">${t.stp||""}</span></div><div class="lb-holes">${t.holes}/18</div></div></div>`;
+      });
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = `<div class="lb-card"><div class="lb-empty">Error loading archive.</div></div>`;
+  }
+}
+
+window.doArchiveThenReset = async () => {
+  const pin = document.getElementById("adminPin").value.trim();
+  const err = document.getElementById("adminErr");
+  if (pin !== ADMIN_PIN) { err.textContent="Incorrect PIN."; return; }
+  err.textContent = "Saving archive…";
+  try {
+    await saveArchive();
+    state.scores = {};
+    writeFull();
+    closeAdmin();
+    renderMain();
+  } catch(e) {
+    err.textContent = "Archive failed. Try again.";
+  }
+};
 
 // ── ADMIN MODAL ─────────────────────────────────────────────────────────────
 window.openAdmin = () => { document.getElementById("adminPin").value=""; document.getElementById("adminErr").textContent=""; document.getElementById("adminModal").classList.add("open"); setTimeout(()=>document.getElementById("adminPin").focus(),100); };
@@ -911,6 +1150,11 @@ window.doUnlock = () => {
     if (typeof target === "number" && tab === target) { renderMain(); }
     document.getElementById("lockModal").classList.remove("open");
     tab = target; openHole = null;
+    if (typeof target === 'number') {
+      for (let h = 0; h < 18; h++) {
+        if (best(target, h) === null) { openHole = h; break; }
+      }
+    }
     renderNav(); renderMain();
     return;
   }
@@ -918,6 +1162,10 @@ window.doUnlock = () => {
 };
 document.getElementById("lockModal").addEventListener("click", e => { if(e.target===document.getElementById("lockModal")) closeLock(); });
 document.getElementById("lockPin").addEventListener("keydown", e => { if(e.key==="Enter") doUnlock(); });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/odcgolf/sw.js', {scope:'/odcgolf/'}).catch(()=>{});
+}
 
 </script>
 </body>
