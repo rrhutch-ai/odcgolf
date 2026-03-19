@@ -36,10 +36,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ── HEADER ── */
 header{background:var(--white);border-bottom:3px solid var(--blue);padding:0 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;height:56px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-header img{height:36px;width:auto;flex-shrink:0}
-.h-title{flex:1;min-width:0}
+header img{height:36px;width:auto;flex-shrink:0;order:1}
+.h-title{flex:1;min-width:0;order:2;text-align:center}
 .h-title h1{font-size:.95rem;font-weight:800;color:var(--navy);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
-.h-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.h-right{display:flex;align-items:center;gap:8px;flex-shrink:0;order:3}
 
 /* lb-hbtn consolidated into .btn .btn--primary .btn--sm */
 .lb-hbtn{background:var(--gold);border:none;color:var(--white);font-size:.75rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:7px 12px;border-radius:7px;cursor:pointer;min-height:34px}
@@ -261,6 +261,18 @@ select.form-inp{cursor:pointer}
 .mbtn-action{background:var(--red);color:var(--white)}
 .mbtn-unlock{background:var(--blue);color:var(--white)}
 .mbtn-archive{background:var(--green);color:var(--white)}
+.mbtn-instr{background:var(--blue);color:var(--white)}
+
+/* ── INSTRUCTIONS EDITOR ── */
+.modal-wide{max-width:520px}
+.modal-wide p{margin-bottom:10px}
+.instr-list{max-height:52vh;overflow-y:auto;margin-bottom:4px;padding-right:2px}
+.instr-item{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;padding:10px 8px;background:var(--silver);border-radius:8px}
+.instr-item textarea{flex:1;padding:8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;line-height:1.45;resize:vertical;min-height:54px;font-family:inherit;color:var(--text);background:var(--white)}
+.instr-item textarea:focus{outline:none;border-color:var(--blue)}
+.instr-warn-btn{background:var(--white);border:2px solid var(--border);border-radius:6px;font-size:.9rem;font-weight:800;cursor:pointer;padding:4px 7px;min-width:36px;min-height:36px;line-height:1;color:var(--muted);flex-shrink:0}
+.instr-warn-btn.active{background:#fef9c3;border-color:#ca8a04;color:#a16207}
+.instr-del-btn{background:transparent;border:none;color:var(--red);font-size:1.4rem;cursor:pointer;padding:2px 4px;line-height:1;min-height:36px;display:flex;align-items:center;flex-shrink:0}
 
 /* ── ARCHIVE ── */
 .archive-entry{border-bottom:2px solid var(--border)}

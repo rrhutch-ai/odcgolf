@@ -8,8 +8,18 @@ import {
 const HOLES = 18;
 const root  = ref(db, "golf");
 
+const DEFAULT_INSTRUCTIONS = [
+  { warn: false, text: "<strong>Tap your team tab</strong> at the top of the screen to open your scorecard." },
+  { warn: false, text: "<strong>Tap a hole number</strong> to expand it, then enter a score for each player on your team." },
+  { warn: false, text: "<strong>The lowest score</strong> among your players is automatically assigned as the team score for that hole. It highlights green." },
+  { warn: false, text: "<strong>Check the Leaderboard</strong> tab at any time to see team standings and individual scores." },
+  { warn: true,  text: "<strong>3-minute rule:</strong> Spend no more than 3 minutes looking for a lost ball. Pick up and move on." },
+  { warn: true,  text: "<strong>Double bogey max:</strong> If a player reaches double bogey (2 over par for that hole), pick up the ball and record the double-bogey score. Keep the round moving." }
+];
+
 // ── STATE ────────────────────────────────────────────────────────────────────
 let state        = defaultState();
+let _instrDraft  = null;     // working copy while editing instructions
 let tab          = "home";   // "home" | "setup" | "lb" | "archive" | 0..N
 let openHole     = null;     // currently expanded hole index on scoring panel
 let unlocked     = new Set(); // tabs unlocked this session
@@ -98,6 +108,11 @@ function normalise() {
   // Normalize par array (Firebase may return an object, not an array)
   if (state.config.par && !Array.isArray(state.config.par)) {
     state.config.par = Array.from({length:18}, (_,i) => +(state.config.par[i] ?? 4));
+  }
+
+  // Normalize instructions array (Firebase converts arrays to objects)
+  if (state.instructions && !Array.isArray(state.instructions)) {
+    state.instructions = Object.values(state.instructions);
   }
   if (!state.config.par || state.config.par.length !== 18) {
     state.config.par = [4,4,3,4,5,4,3,4,4, 4,3,5,4,4,3,4,4,5];
@@ -255,7 +270,7 @@ function renderNav() {
     if      (tab === "setup")   ttl.textContent = "Setup";
     else if (tab === "lb")      ttl.textContent = "Leaderboard";
     else if (tab === "archive") ttl.textContent = "Archive";
-    else                        ttl.textContent = tname(tab);
+    else                        ttl.textContent = "";
   }
 }
 
@@ -509,30 +524,7 @@ function renderHome() {
       <div class="welcome-section">
         <h3>How to Score</h3>
         <div class="welcome-rules">
-          <div class="rule-item">
-            <span class="rule-num">1</span>
-            <span class="rule-text"><strong>Tap your team tab</strong> at the top of the screen to open your scorecard.</span>
-          </div>
-          <div class="rule-item">
-            <span class="rule-num">2</span>
-            <span class="rule-text"><strong>Tap a hole number</strong> to expand it, then enter a score for each player on your team.</span>
-          </div>
-          <div class="rule-item">
-            <span class="rule-num">3</span>
-            <span class="rule-text"><strong>The lowest score</strong> among your players is automatically assigned as the team score for that hole. It highlights green.</span>
-          </div>
-          <div class="rule-item">
-            <span class="rule-num">4</span>
-            <span class="rule-text"><strong>Check the Leaderboard</strong> tab at any time to see team standings and individual scores.</span>
-          </div>
-          <div class="rule-item">
-            <span class="rule-num warn">!</span>
-            <span class="rule-text"><strong>3-minute rule:</strong> Spend no more than 3 minutes looking for a lost ball. Pick up and move on.</span>
-          </div>
-          <div class="rule-item">
-            <span class="rule-num warn">!</span>
-            <span class="rule-text"><strong>Double bogey max:</strong> If a player reaches double bogey (2 over par for that hole), pick up the ball and record the double-bogey score. Keep the round moving.</span>
-          </div>
+          ${_renderInstructions()}
         </div>
       </div>
 
@@ -879,6 +871,92 @@ async function renderArchive(container) {
   }
 }
 
+// ── INSTRUCTIONS RENDERER ─────────────────────────────────────────────────────
+function _renderInstructions() {
+  const items = (state.instructions && state.instructions.length)
+    ? state.instructions : DEFAULT_INSTRUCTIONS;
+  let numCount = 0;
+  return items.map(item => {
+    const num = item.warn ? '!' : String(++numCount);
+    return `<div class="rule-item">
+      <span class="rule-num${item.warn ? ' warn' : ''}">${num}</span>
+      <span class="rule-text">${item.text}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── INSTRUCTIONS EDITOR ────────────────────────────────────────────────────────
+async function openInstrEditor() {
+  const entered = document.getElementById("adminPin").value.trim();
+  const err     = document.getElementById("adminErr");
+  const stored  = await getAdminPin();
+  if (!stored) { err.textContent = "No admin PIN set. Please refresh and set one."; return; }
+  if (entered !== stored) { err.textContent = "Incorrect PIN."; return; }
+  closeAdmin();
+  _instrDraft = JSON.parse(JSON.stringify(
+    (state.instructions && state.instructions.length) ? state.instructions : DEFAULT_INSTRUCTIONS
+  ));
+  _renderInstrEditor();
+  document.getElementById("instrModal").classList.add("open");
+}
+
+function closeInstr() {
+  document.getElementById("instrModal").classList.remove("open");
+  _instrDraft = null;
+}
+
+function _renderInstrEditor() {
+  const list = document.getElementById("instrList");
+  list.innerHTML = (_instrDraft || []).map((item, i) => `
+    <div class="instr-item">
+      <button class="instr-warn-btn${item.warn ? ' active' : ''}" data-action="toggleInstrWarn" data-idx="${i}" title="Toggle warning style">${item.warn ? '⚠' : '#'}</button>
+      <textarea data-action="editInstrText" data-idx="${i}" rows="2">${esc(item.text)}</textarea>
+      <button class="instr-del-btn" data-action="removeInstrItem" data-idx="${i}" title="Remove item">×</button>
+    </div>
+  `).join('');
+}
+
+function _addInstrItem() {
+  if (!_instrDraft) return;
+  _instrDraft.push({ warn: false, text: "" });
+  _renderInstrEditor();
+  const textareas = document.querySelectorAll("#instrList textarea");
+  if (textareas.length) textareas[textareas.length - 1].focus();
+}
+
+function _removeInstrItem(idx) {
+  if (!_instrDraft) return;
+  _instrDraft.splice(idx, 1);
+  _renderInstrEditor();
+}
+
+function _toggleInstrWarn(idx) {
+  if (!_instrDraft || !_instrDraft[idx]) return;
+  _instrDraft[idx].warn = !_instrDraft[idx].warn;
+  _renderInstrEditor();
+}
+
+function _editInstrText(idx, val) {
+  if (!_instrDraft || !_instrDraft[idx]) return;
+  _instrDraft[idx].text = val;
+}
+
+function _resetInstr() {
+  _instrDraft = JSON.parse(JSON.stringify(DEFAULT_INSTRUCTIONS));
+  _renderInstrEditor();
+}
+
+async function saveInstr() {
+  if (!_instrDraft) return;
+  const err = document.getElementById("instrErr");
+  const cleaned = _instrDraft.filter(item => item.text.trim());
+  if (!cleaned.length) { err.textContent = "Add at least one item."; return; }
+  state.instructions = cleaned;
+  writeFull();
+  closeInstr();
+  renderMain();
+}
+
 // ── ADMIN MODAL ───────────────────────────────────────────────────────────────
 function openAdmin() {
   document.getElementById("adminPin").value = "";
@@ -1047,15 +1125,9 @@ document.getElementById("main").addEventListener("change", e => {
   if (action === "setPar")           { _spar(+el.dataset.h, +el.value); return; }
 });
 
-// Header buttons (back-bar, spectator) — outside #main
+// Header buttons (back-bar) — outside #main
 document.getElementById("home-btn").addEventListener("click", () => _tab("home"));
 document.querySelector(".lb-hbtn").addEventListener("click", () => _tab("lb"));
-document.getElementById("spectator-btn").addEventListener("click", () => {
-  spectatorMode = !spectatorMode;
-  const btn = document.getElementById("spectator-btn");
-  if (btn) btn.classList.toggle("active", spectatorMode);
-  render();
-});
 
 // Admin modal
 document.getElementById("adminModal").addEventListener("click", e => {
@@ -1067,6 +1139,7 @@ document.getElementById("adminModal").addEventListener("click", e => {
   if (el.dataset.action === "closeAdmin")         closeAdmin();
   if (el.dataset.action === "doReset")            doReset();
   if (el.dataset.action === "doArchiveThenReset") doArchiveThenReset();
+  if (el.dataset.action === "openInstrEditor")    openInstrEditor();
 });
 document.getElementById("adminPin").addEventListener("keydown", e => {
   if (e.key === "Enter") doReset();
@@ -1084,6 +1157,27 @@ document.getElementById("lockModal").addEventListener("click", e => {
 });
 document.getElementById("lockPin").addEventListener("keydown", e => {
   if (e.key === "Enter") doUnlock();
+});
+
+// Instructions editor modal
+document.getElementById("instrModal").addEventListener("click", e => {
+  if (e.target === document.getElementById("instrModal")) closeInstr();
+});
+document.getElementById("instrModal").addEventListener("click", e => {
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  const idx = +el.dataset.idx;
+  if (el.dataset.action === "closeInstr")       closeInstr();
+  if (el.dataset.action === "addInstrItem")     _addInstrItem();
+  if (el.dataset.action === "removeInstrItem")  _removeInstrItem(idx);
+  if (el.dataset.action === "toggleInstrWarn")  _toggleInstrWarn(idx);
+  if (el.dataset.action === "saveInstr")        saveInstr();
+  if (el.dataset.action === "resetInstr")       _resetInstr();
+});
+document.getElementById("instrModal").addEventListener("input", e => {
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  if (el.dataset.action === "editInstrText") _editInstrText(+el.dataset.idx, el.value);
 });
 
 // ── SERVICE WORKER ────────────────────────────────────────────────────────────
