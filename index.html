@@ -43,31 +43,14 @@
 <!-- Admin modal -->
 <div class="overlay" id="adminModal">
   <div class="modal">
-    <h3>Admin</h3>
-    <p>Enter your PIN, then choose an action below.</p>
+    <h3>Admin Reset</h3>
+    <p>Enter your PIN to clear all scores. Names and config are preserved.</p>
     <input type="text" inputmode="numeric" id="adminPin" placeholder="PIN" maxlength="12" autocomplete="one-time-code">
     <div class="modal-err" id="adminErr"></div>
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" data-action="closeAdmin">Cancel</button>
-      <button class="mbtn mbtn-instr" data-action="openInstrEditor">Edit Instructions</button>
       <button class="mbtn mbtn-archive" data-action="doArchiveThenReset">Archive &amp; Reset</button>
       <button class="mbtn mbtn-action" data-action="doReset">Reset Scores</button>
-    </div>
-  </div>
-</div>
-
-<!-- Instructions editor modal -->
-<div class="overlay" id="instrModal">
-  <div class="modal modal-wide">
-    <h3>Edit Instructions</h3>
-    <p>Edit, reorder, or remove items shown on the home screen. Use <strong>⚠</strong> to mark warning items.</p>
-    <div class="instr-list" id="instrList"></div>
-    <button class="mbtn mbtn-instr" data-action="addInstrItem" style="width:100%;margin-top:4px">+ Add Item</button>
-    <div class="modal-err" id="instrErr"></div>
-    <div class="modal-btns" style="margin-top:12px">
-      <button class="mbtn mbtn-cancel" data-action="closeInstr">Cancel</button>
-      <button class="mbtn mbtn-cancel" data-action="resetInstr" style="color:var(--muted)">Restore Defaults</button>
-      <button class="mbtn mbtn-action" data-action="saveInstr">Save</button>
     </div>
   </div>
 </div>

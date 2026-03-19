@@ -261,15 +261,15 @@ select.form-inp{cursor:pointer}
 .mbtn-action{background:var(--red);color:var(--white)}
 .mbtn-unlock{background:var(--blue);color:var(--white)}
 .mbtn-archive{background:var(--green);color:var(--white)}
-.mbtn-instr{background:var(--blue);color:var(--white)}
-
-/* ── INSTRUCTIONS EDITOR ── */
-.modal-wide{max-width:520px}
-.modal-wide p{margin-bottom:10px}
-.instr-list{max-height:52vh;overflow-y:auto;margin-bottom:4px;padding-right:2px}
-.instr-item{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;padding:10px 8px;background:var(--silver);border-radius:8px}
-.instr-item textarea{flex:1;padding:8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;line-height:1.45;resize:vertical;min-height:54px;font-family:inherit;color:var(--text);background:var(--white)}
-.instr-item textarea:focus{outline:none;border-color:var(--blue)}
+/* ── INSTRUCTIONS SECTION (Setup page) ── */
+.instr-section{margin-top:24px;padding-top:18px;border-top:1px solid var(--border)}
+.instr-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.instr-section-head h3{font-size:.9rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--navy)}
+.instr-section-hint{font-size:.78rem;color:var(--muted);margin-bottom:10px;line-height:1.4}
+.instr-setup-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.instr-setup-item{display:flex;gap:8px;align-items:flex-start;padding:10px 8px;background:var(--silver);border-radius:8px}
+.instr-setup-ta{flex:1;padding:8px;border:1.5px solid var(--border);border-radius:6px;font-size:.82rem;line-height:1.45;resize:vertical;min-height:52px;font-family:inherit;color:var(--text);background:var(--white)}
+.instr-setup-ta:focus{outline:none;border-color:var(--blue)}
 .instr-warn-btn{background:var(--white);border:2px solid var(--border);border-radius:6px;font-size:.9rem;font-weight:800;cursor:pointer;padding:4px 7px;min-width:36px;min-height:36px;line-height:1;color:var(--muted);flex-shrink:0}
 .instr-warn-btn.active{background:#fef9c3;border-color:#ca8a04;color:#a16207}
 .instr-del-btn{background:transparent;border:none;color:var(--red);font-size:1.4rem;cursor:pointer;padding:2px 4px;line-height:1;min-height:36px;display:flex;align-items:center;flex-shrink:0}

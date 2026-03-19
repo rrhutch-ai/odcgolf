@@ -19,7 +19,6 @@ const DEFAULT_INSTRUCTIONS = [
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let state        = defaultState();
-let _instrDraft  = null;     // working copy while editing instructions
 let tab          = "home";   // "home" | "setup" | "lb" | "archive" | 0..N
 let openHole     = null;     // currently expanded hole index on scoring panel
 let unlocked     = new Set(); // tabs unlocked this session
@@ -534,11 +533,6 @@ function renderHome() {
           <span class="action-label">Setup</span>
           <span class="action-sub">Configure teams &amp; players</span>
         </button>
-        <button class="action-tile" data-action="openAdmin">
-          <span class="action-icon">✎</span>
-          <span class="action-label">Edit Instructions</span>
-          <span class="action-sub">Update home screen rules</span>
-        </button>
         <button class="action-tile danger" data-action="openAdmin">
           <span class="action-icon">↺</span>
           <span class="action-label">Admin Reset</span>
@@ -711,6 +705,15 @@ function renderSetup() {
             ${Array.from({length:9},(_,i)=>`<div class="par-row"><label>H${i+10}</label><input class="par-inp" type="number" inputmode="numeric" min="3" max="6" value="${holePar(i+9)}" data-h="${i+9}" data-action="setPar"></div>`).join('')}
           </div>
         </div>
+      </div>
+      <div class="instr-section" id="instr-section">
+        <div class="instr-section-head">
+          <h3>Home Screen Instructions</h3>
+          <button class="btn btn-outline btn--sm" data-action="instrReset">Restore Defaults</button>
+        </div>
+        <p class="instr-section-hint">Use <strong>#</strong> for numbered items and <strong>⚠</strong> for warning items. Changes save automatically.</p>
+        <div class="instr-setup-list" id="instr-setup-list">${_renderInstrSetupList()}</div>
+        <button class="btn btn-outline" data-action="instrAdd" style="width:100%;margin-top:4px">+ Add Item</button>
       </div>
       <div class="setup-footer">
         <button class="btn btn-primary" data-action="saveSetup">Save &amp; Start Scoring</button>
@@ -890,76 +893,65 @@ function _renderInstructions() {
   }).join('');
 }
 
-// ── INSTRUCTIONS EDITOR ────────────────────────────────────────────────────────
-async function openInstrEditor() {
-  const entered = document.getElementById("adminPin").value.trim();
-  const err     = document.getElementById("adminErr");
-  const stored  = await getAdminPin();
-  if (!stored) { err.textContent = "No admin PIN set. Please refresh and set one."; return; }
-  if (entered !== stored) { err.textContent = "Incorrect PIN."; return; }
-  closeAdmin();
-  _instrDraft = JSON.parse(JSON.stringify(
-    (state.instructions && state.instructions.length) ? state.instructions : DEFAULT_INSTRUCTIONS
-  ));
-  _renderInstrEditor();
-  document.getElementById("instrModal").classList.add("open");
+// ── INSTRUCTIONS (inline in Setup page) ───────────────────────────────────────
+function _instrEnsure() {
+  if (!state.instructions || !Array.isArray(state.instructions) || !state.instructions.length) {
+    state.instructions = JSON.parse(JSON.stringify(DEFAULT_INSTRUCTIONS));
+  }
 }
 
-function closeInstr() {
-  document.getElementById("instrModal").classList.remove("open");
-  _instrDraft = null;
-}
-
-function _renderInstrEditor() {
-  const list = document.getElementById("instrList");
-  list.innerHTML = (_instrDraft || []).map((item, i) => `
-    <div class="instr-item">
-      <button class="instr-warn-btn${item.warn ? ' active' : ''}" data-action="toggleInstrWarn" data-idx="${i}" title="Toggle warning style">${item.warn ? '⚠' : '#'}</button>
-      <textarea data-action="editInstrText" data-idx="${i}" rows="2">${esc(item.text)}</textarea>
-      <button class="instr-del-btn" data-action="removeInstrItem" data-idx="${i}" title="Remove item">×</button>
+function _renderInstrSetupList() {
+  const items = (state.instructions && state.instructions.length)
+    ? state.instructions : DEFAULT_INSTRUCTIONS;
+  return items.map((item, i) => `
+    <div class="instr-setup-item">
+      <button class="instr-warn-btn${item.warn ? ' active' : ''}" data-action="instrWarn" data-idx="${i}" title="Toggle warning style">${item.warn ? '⚠' : '#'}</button>
+      <textarea class="instr-setup-ta" data-action="instrText" data-idx="${i}" rows="2">${esc(item.text)}</textarea>
+      <button class="instr-del-btn" data-action="instrRemove" data-idx="${i}" title="Remove">×</button>
     </div>
   `).join('');
 }
 
-function _addInstrItem() {
-  if (!_instrDraft) return;
-  _instrDraft.push({ warn: false, text: "" });
-  _renderInstrEditor();
-  const textareas = document.querySelectorAll("#instrList textarea");
-  if (textareas.length) textareas[textareas.length - 1].focus();
+function _instrRefresh() {
+  const list = document.getElementById("instr-setup-list");
+  if (list) list.innerHTML = _renderInstrSetupList();
 }
 
-function _removeInstrItem(idx) {
-  if (!_instrDraft) return;
-  _instrDraft.splice(idx, 1);
-  _renderInstrEditor();
-}
-
-function _toggleInstrWarn(idx) {
-  if (!_instrDraft || !_instrDraft[idx]) return;
-  _instrDraft[idx].warn = !_instrDraft[idx].warn;
-  _renderInstrEditor();
-}
-
-function _editInstrText(idx, val) {
-  if (!_instrDraft || !_instrDraft[idx]) return;
-  _instrDraft[idx].text = val;
-}
-
-function _resetInstr() {
-  _instrDraft = JSON.parse(JSON.stringify(DEFAULT_INSTRUCTIONS));
-  _renderInstrEditor();
-}
-
-async function saveInstr() {
-  if (!_instrDraft) return;
-  const err = document.getElementById("instrErr");
-  const cleaned = _instrDraft.filter(item => item.text.trim());
-  if (!cleaned.length) { err.textContent = "Add at least one item."; return; }
-  state.instructions = cleaned;
+function _instrSetText(idx, val) {
+  _instrEnsure();
+  if (!state.instructions[idx]) return;
+  state.instructions[idx].text = val;
   writeFull();
-  closeInstr();
-  renderMain();
+}
+
+function _instrWarnToggle(idx) {
+  _instrEnsure();
+  if (!state.instructions[idx]) return;
+  state.instructions[idx].warn = !state.instructions[idx].warn;
+  _instrRefresh();
+  writeFull();
+}
+
+function _instrAdd() {
+  _instrEnsure();
+  state.instructions.push({ warn: false, text: "" });
+  _instrRefresh();
+  writeFull();
+  const tas = document.querySelectorAll(".instr-setup-ta");
+  if (tas.length) tas[tas.length - 1].focus();
+}
+
+function _instrRemove(idx) {
+  _instrEnsure();
+  state.instructions.splice(idx, 1);
+  _instrRefresh();
+  writeFull();
+}
+
+function _instrReset() {
+  state.instructions = JSON.parse(JSON.stringify(DEFAULT_INSTRUCTIONS));
+  _instrRefresh();
+  writeFull();
 }
 
 // ── ADMIN MODAL ───────────────────────────────────────────────────────────────
@@ -1088,6 +1080,10 @@ document.getElementById("main").addEventListener("click", e => {
   if (action === "removeTeam") { _removeTeam(); return; }
   if (action === "saveSetup")  { _saveSetup(); return; }
   if (action === "genPin")     { _genPin(+el.dataset.t); return; }
+  if (action === "instrWarn")   { _instrWarnToggle(+el.dataset.idx); return; }
+  if (action === "instrRemove") { _instrRemove(+el.dataset.idx); return; }
+  if (action === "instrAdd")    { _instrAdd(); return; }
+  if (action === "instrReset")  { _instrReset(); return; }
 });
 
 document.getElementById("main").addEventListener("input", e => {
@@ -1110,6 +1106,7 @@ document.getElementById("main").addEventListener("input", e => {
   if (action === "setTournamentName"){ _stname(el.value); return; }
   if (action === "setNumPlayers")    { _snp(+el.value); return; }
   if (action === "setPar")           { _spar(+el.dataset.h, +el.value); return; }
+  if (action === "instrText")        { _instrSetText(+el.dataset.idx, el.value); return; }
 });
 
 document.getElementById("main").addEventListener("change", e => {
@@ -1144,7 +1141,6 @@ document.getElementById("adminModal").addEventListener("click", e => {
   if (el.dataset.action === "closeAdmin")         closeAdmin();
   if (el.dataset.action === "doReset")            doReset();
   if (el.dataset.action === "doArchiveThenReset") doArchiveThenReset();
-  if (el.dataset.action === "openInstrEditor")    openInstrEditor();
 });
 document.getElementById("adminPin").addEventListener("keydown", e => {
   if (e.key === "Enter") doReset();
@@ -1162,27 +1158,6 @@ document.getElementById("lockModal").addEventListener("click", e => {
 });
 document.getElementById("lockPin").addEventListener("keydown", e => {
   if (e.key === "Enter") doUnlock();
-});
-
-// Instructions editor modal
-document.getElementById("instrModal").addEventListener("click", e => {
-  if (e.target === document.getElementById("instrModal")) closeInstr();
-});
-document.getElementById("instrModal").addEventListener("click", e => {
-  const el = e.target.closest("[data-action]");
-  if (!el) return;
-  const idx = +el.dataset.idx;
-  if (el.dataset.action === "closeInstr")       closeInstr();
-  if (el.dataset.action === "addInstrItem")     _addInstrItem();
-  if (el.dataset.action === "removeInstrItem")  _removeInstrItem(idx);
-  if (el.dataset.action === "toggleInstrWarn")  _toggleInstrWarn(idx);
-  if (el.dataset.action === "saveInstr")        saveInstr();
-  if (el.dataset.action === "resetInstr")       _resetInstr();
-});
-document.getElementById("instrModal").addEventListener("input", e => {
-  const el = e.target.closest("[data-action]");
-  if (!el) return;
-  if (el.dataset.action === "editInstrText") _editInstrText(+el.dataset.idx, el.value);
 });
 
 // ── SERVICE WORKER ────────────────────────────────────────────────────────────
