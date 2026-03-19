@@ -534,6 +534,11 @@ function renderHome() {
           <span class="action-label">Setup</span>
           <span class="action-sub">Configure teams &amp; players</span>
         </button>
+        <button class="action-tile" data-action="openAdmin">
+          <span class="action-icon">✎</span>
+          <span class="action-label">Edit Instructions</span>
+          <span class="action-sub">Update home screen rules</span>
+        </button>
         <button class="action-tile danger" data-action="openAdmin">
           <span class="action-icon">↺</span>
           <span class="action-label">Admin Reset</span>
